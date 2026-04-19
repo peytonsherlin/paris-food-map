@@ -1,0 +1,1415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Paris Food Guide</title>
+<meta name="description" content="178 curated restaurants, cafés and bistros in Paris — map, filters and local picks.">
+<meta name="theme-color" content="#8b5e3c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Paris Food">
+<link rel="manifest" href='data:application/manifest+json,{"name":"Paris Food Guide","short_name":"Paris Food","start_url":".","display":"standalone","background_color":"%23faf8f5","theme_color":"%238b5e3c"}'>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#faf8f5;--white:#fff;--border:#e8e3dc;--text:#1c1c1c;--muted:#9a8f82;
+  --accent:#8b5e3c;--accent-light:#f3ece4;--sidebar:232px;--list:320px;
+}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);height:100dvh;display:flex;flex-direction:column;overflow:hidden;}
+
+/* ── HEADER ── */
+#header{background:var(--white);height:54px;padding:0 18px;display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--border);flex-shrink:0;z-index:500;}
+#header h1{font-family:'Playfair Display',serif;font-size:1.2rem;font-weight:700;white-space:nowrap;color:var(--text);}
+#header h1 em{font-style:italic;color:var(--accent);}
+.hdiv{width:1px;height:18px;background:var(--border);flex-shrink:0;}
+#search-wrap{flex:1;max-width:380px;position:relative;}
+#search{width:100%;padding:6px 10px 6px 30px;border-radius:5px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.8rem;font-family:'Inter',sans-serif;outline:none;transition:border-color .15s,background .15s;}
+#search::placeholder{color:var(--muted);}
+#search:focus{border-color:var(--accent);background:var(--white);}
+.si{position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:0.78rem;opacity:.4;pointer-events:none;}
+#hdr-right{display:flex;align-items:center;gap:8px;margin-left:auto;}
+#count-badge{font-size:0.72rem;color:var(--muted);white-space:nowrap;}
+#count-badge strong{color:var(--accent);font-weight:600;}
+
+.hdr-btn{display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:5px;border:1px solid var(--border);background:var(--white);font-size:0.72rem;font-family:'Inter',sans-serif;color:var(--muted);cursor:pointer;white-space:nowrap;transition:all .15s;}
+.hdr-btn:hover{border-color:var(--accent);color:var(--accent);}
+.hdr-btn.active{background:var(--accent-light);border-color:var(--accent);color:var(--accent);}
+#fav-btn .fav-count{background:var(--accent);color:#fff;border-radius:9px;padding:1px 6px;font-size:0.65rem;font-weight:600;display:none;}
+#fav-btn .fav-count.show{display:inline;}
+#mobile-filter-btn{display:none;}
+
+/* ── LAYOUT ── */
+#layout{display:flex;flex:1;overflow:hidden;position:relative;}
+
+/* ── SIDEBAR ── */
+#sidebar{width:var(--sidebar);min-width:var(--sidebar);background:var(--white);border-right:1px solid var(--border);overflow-y:auto;flex-shrink:0;padding:16px 14px;transition:width .25s ease,min-width .25s ease,padding .25s ease,border-color .25s ease;}
+#sidebar.collapsed{width:0;min-width:0;padding:0;overflow:hidden;border-right-color:transparent;}
+#sidebar-toggle{position:absolute;left:var(--sidebar);top:50%;transform:translateY(-50%);width:16px;height:48px;background:var(--white);border:1px solid var(--border);border-left:none;border-radius:0 6px 6px 0;cursor:pointer;z-index:460;display:flex;align-items:center;justify-content:center;font-size:0.8rem;color:var(--muted);transition:left .25s ease;box-shadow:2px 0 6px rgba(0,0,0,.07);}
+#sidebar-toggle:hover{color:var(--accent);}
+#layout.sidebar-collapsed #sidebar-toggle{left:0;border-left:1px solid var(--border);border-right:none;border-radius:6px 0 0 6px;}
+#sidebar::-webkit-scrollbar{width:3px;}
+#sidebar::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.fs{margin-bottom:20px;}
+.ft{font-size:0.63rem;text-transform:uppercase;letter-spacing:1.3px;color:var(--muted);font-weight:600;margin-bottom:9px;}
+
+/* Experience slider — vertical */
+.exp-wrap{display:flex;align-items:stretch;gap:10px;padding:4px 0 6px;}
+#exp-slider{writing-mode:vertical-lr;-webkit-appearance:none;appearance:none;width:4px;height:116px;background:var(--border);border-radius:2px;outline:none;cursor:pointer;flex-shrink:0;margin:3px 7px;}
+#exp-slider::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--white);border:2.5px solid var(--accent);box-shadow:0 1px 4px rgba(0,0,0,.18);cursor:pointer;}
+#exp-slider::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--white);border:2.5px solid var(--accent);box-shadow:0 1px 4px rgba(0,0,0,.18);cursor:pointer;border-style:solid;}
+.exp-labels{display:flex;flex-direction:column;justify-content:space-between;flex:1;padding:2px 0;}
+.exp-labels span{font-size:0.6rem;color:var(--muted);line-height:1.3;transition:color .15s,font-weight .15s;}
+.exp-labels span.active{color:var(--accent);font-weight:600;}
+
+/* Category filters */
+#cat-filters{display:flex;flex-wrap:wrap;gap:5px;}
+.filter-item{display:flex;align-items:center;gap:4px;padding:4px 9px;border-radius:20px;border:1px solid var(--border);background:var(--white);cursor:pointer;font-size:0.69rem;font-family:'Inter',sans-serif;color:#6b6055;user-select:none;transition:all .12s;}
+.filter-item:hover{border-color:var(--accent);color:var(--text);}
+.filter-item.off{opacity:.32;}
+.cat-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+
+/* Arr grid */
+.arr-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;}
+.arr-btn{padding:4px 1px;border-radius:4px;border:1px solid var(--border);background:var(--white);color:var(--muted);font-size:0.68rem;font-family:'Inter',sans-serif;cursor:pointer;text-align:center;transition:all .12s;}
+.arr-btn.on{background:var(--text);border-color:var(--text);color:#fff;font-weight:500;}
+.arr-btn:hover:not(.on){border-color:var(--accent);color:var(--accent);}
+
+/* Meal */
+.meal-row{display:grid;grid-template-columns:1fr 1fr;gap:4px;}
+.meal-btn{padding:5px 4px;border-radius:5px;border:1px solid var(--border);background:var(--white);color:var(--muted);font-size:0.7rem;font-family:'Inter',sans-serif;cursor:pointer;transition:all .12s;text-align:center;}
+.meal-btn.on{background:var(--text);border-color:var(--text);color:#fff;font-weight:500;}
+.meal-btn:hover:not(.on){border-color:var(--accent);color:var(--accent);}
+
+/* Price */
+.price-row{display:flex;gap:4px;flex-wrap:wrap;}
+.price-btn{padding:4px 10px;border-radius:4px;border:1px solid var(--border);background:var(--white);color:var(--muted);font-size:0.73rem;font-family:'Inter',sans-serif;cursor:pointer;transition:all .12s;}
+.price-btn.on{background:var(--text);border-color:var(--text);color:#fff;font-weight:500;}
+.price-btn:hover:not(.on){border-color:var(--accent);color:var(--accent);}
+
+#reset-btn{width:100%;padding:6px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.73rem;font-family:'Inter',sans-serif;cursor:pointer;transition:all .12s;margin-top:4px;}
+#reset-btn:hover{border-color:var(--text);color:var(--text);}
+
+/* ── MAP ── */
+#map{flex:1;position:relative;}
+#loc-btn{position:absolute;bottom:90px;right:10px;z-index:400;width:34px;height:34px;border-radius:6px;background:var(--white);border:1px solid var(--border);box-shadow:0 1px 5px rgba(0,0,0,.12);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1rem;transition:border-color .15s;}
+#loc-btn:hover{border-color:var(--accent);}
+#loc-btn.locating{animation:pulse 1s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+
+/* ── MOBILE OVERLAY ── */
+#mobile-overlay{display:none;position:fixed;inset:0;top:54px;background:rgba(0,0,0,.38);z-index:480;}
+#mobile-overlay.show{display:block;}
+
+/* ── SIDEBAR CLOSE HEADER (mobile only) ── */
+#sidebar-mob-header{display:none;padding:14px 16px 12px;border-bottom:1px solid var(--border);align-items:center;justify-content:space-between;flex-shrink:0;background:var(--white);}
+#sidebar-mob-header span{font-family:'Playfair Display',serif;font-size:0.95rem;font-weight:700;color:var(--text);}
+#sidebar-mob-close{background:none;border:none;font-size:1.1rem;color:var(--muted);cursor:pointer;padding:2px 6px;}
+#sidebar-mob-close:hover{color:var(--text);}
+@media(max-width:700px){#sidebar-mob-header{display:flex;}}
+body.force-mobile #sidebar-mob-header{display:flex;}
+
+/* ── MOBILE ACTION BAR ── */
+#mobile-bar{display:none;position:absolute;bottom:24px;left:50%;transform:translateX(-50%);z-index:450;align-items:center;gap:10px;white-space:nowrap;}
+.mbar-pill{display:flex;align-items:center;gap:8px;padding:13px 22px;border-radius:50px;background:var(--white);border:1px solid var(--border);box-shadow:0 4px 20px rgba(0,0,0,.16);font-size:0.88rem;font-family:'Inter',sans-serif;font-weight:600;color:var(--text);cursor:pointer;transition:all .15s;}
+.mbar-pill:active{transform:scale(.96);}
+.mbar-sub{font-size:0.72rem;color:var(--muted);font-weight:400;}
+.mbar-badge{background:var(--accent);color:#fff;border-radius:10px;padding:1px 7px;font-size:0.65rem;font-weight:700;display:none;}
+.mbar-badge.show{display:inline;}
+
+/* ── PHOTO TOOLTIP ── */
+.leaflet-tooltip.photo-tip{padding:0;background:var(--white);border:1px solid var(--border);border-radius:10px;box-shadow:0 6px 28px rgba(0,0,0,.16);overflow:hidden;width:210px;pointer-events:none;}
+.leaflet-tooltip.photo-tip::before{display:none;}
+.tip-img{width:210px;height:132px;object-fit:cover;display:block;background:#f0ebe4;}
+.tip-body{padding:9px 11px 11px;}
+.tip-name{font-family:'Playfair Display',serif;font-size:0.88rem;font-weight:700;color:var(--text);margin-bottom:2px;line-height:1.25;}
+.tip-sub{font-size:0.68rem;color:var(--muted);margin-bottom:4px;}
+.tip-web{font-size:0.65rem;color:var(--accent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;text-decoration:none;}
+.tip-web:hover{text-decoration:underline;}
+
+/* ── POPUP ── */
+.pw{min-width:230px;max-width:290px;font-family:'Inter',sans-serif;}
+.photo-strip{display:flex;gap:2px;margin:-13px -14px 12px;overflow-x:auto;scrollbar-width:none;}
+.photo-strip::-webkit-scrollbar{display:none;}
+.photo-strip img{width:116px;height:76px;object-fit:cover;flex-shrink:0;background:#f0ebe4;}
+.photo-strip img:first-child{border-radius:8px 0 0 0;}
+.photo-strip img:last-child{border-radius:0 8px 0 0;}
+.pn{font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;color:var(--text);line-height:1.3;margin-bottom:5px;}
+.pbadges{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;align-items:center;}
+.badge-local{display:inline-flex;align-items:center;gap:3px;font-size:0.64rem;font-weight:600;letter-spacing:.2px;padding:2px 7px;border-radius:3px;background:#e8f4e8;color:#2d6a2d;border:1px solid #b8dab8;}
+.badge-michelin{display:inline-flex;align-items:center;gap:2px;font-size:0.64rem;font-weight:700;padding:2px 7px;border-radius:3px;background:#fff8e6;color:#a07800;border:1px solid #e0cc80;}
+.badge-cat{font-size:0.64rem;font-weight:600;padding:2px 7px;border-radius:3px;color:#fff;}
+.pmeta{display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap;}
+.pprice{font-size:0.75rem;font-weight:600;color:var(--accent);}
+.parr{font-size:0.68rem;color:var(--muted);}
+.pdiv{height:1px;background:#f0ebe4;margin-bottom:8px;}
+.prev{font-size:0.76rem;color:#555;line-height:1.5;margin-bottom:9px;font-style:italic;}
+.pactions{display:flex;gap:5px;margin-bottom:7px;flex-wrap:wrap;}
+.pact-btn{flex:1;min-width:0;padding:6px 7px;border-radius:4px;border:1px solid var(--border);background:var(--white);font-size:0.7rem;font-family:'Inter',sans-serif;color:var(--text);cursor:pointer;text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:3px;transition:all .12s;white-space:nowrap;}
+.pact-btn:hover{border-color:var(--accent);color:var(--accent);}
+.pact-btn.saved{background:var(--accent);border-color:var(--accent);color:#fff;}
+.psource{font-size:0.64rem;color:var(--muted);}
+
+.leaflet-popup-content-wrapper{border-radius:8px;box-shadow:0 4px 24px rgba(0,0,0,.11),0 1px 4px rgba(0,0,0,.06);border:1px solid var(--border);}
+.leaflet-popup-tip-container{display:none;}
+.leaflet-popup-content{margin:13px 14px;}
+.leaflet-popup-close-button{color:var(--muted)!important;top:8px!important;right:10px!important;font-size:16px!important;}
+
+
+/* ── FAVOURITES PANEL ── */
+#fav-panel{position:absolute;top:0;right:0;bottom:0;width:280px;background:var(--white);border-left:1px solid var(--border);z-index:600;transform:translateX(100%);transition:transform .25s ease;display:flex;flex-direction:column;}
+#fav-panel.open{transform:translateX(0);}
+#fav-header{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+#fav-header h3{font-family:'Playfair Display',serif;font-size:0.95rem;font-weight:700;}
+#fav-close{background:none;border:none;font-size:1.1rem;color:var(--muted);cursor:pointer;padding:2px 6px;}
+#fav-close:hover{color:var(--text);}
+#fav-list{flex:1;overflow-y:auto;padding:10px 14px;}
+#fav-list::-webkit-scrollbar{width:3px;}
+#fav-list::-webkit-scrollbar-thumb{background:var(--border);}
+.fav-item{padding:8px 0;border-bottom:1px solid #f5f0e8;display:flex;align-items:flex-start;gap:8px;}
+.fav-item:last-child{border-bottom:none;}
+.fav-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px;}
+.fav-info{flex:1;}
+.fav-name{font-size:0.8rem;font-weight:600;color:var(--text);margin-bottom:1px;}
+.fav-sub{font-size:0.7rem;color:var(--muted);}
+.fav-remove{background:none;border:none;color:#ccc;cursor:pointer;font-size:0.9rem;padding:0 2px;}
+.fav-remove:hover{color:#e74c3c;}
+#fav-empty{padding:24px 0;text-align:center;color:var(--muted);font-size:0.8rem;line-height:1.6;}
+#fav-actions{padding:12px 14px;border-top:1px solid var(--border);flex-shrink:0;display:flex;flex-direction:column;gap:6px;}
+.fav-export-btn{padding:7px;border-radius:4px;border:1px solid var(--border);background:var(--white);font-size:0.75rem;font-family:'Inter',sans-serif;color:var(--text);cursor:pointer;transition:all .12s;text-align:center;}
+.fav-export-btn:hover{border-color:var(--accent);color:var(--accent);}
+.fav-export-btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+.fav-export-btn.primary:hover{background:#7a5232;border-color:#7a5232;}
+
+/* ── MOBILE (real small screens) ── */
+@media(max-width:700px){
+  #sidebar-toggle{display:none!important;}
+  #list-toggle{display:none!important;}
+  #count-badge{display:none;}
+  #fav-btn{display:none!important;}
+  #mobile-filter-btn{display:none!important;}
+  #view-toggle{display:none!important;}
+  .hdiv{display:none;}
+  #search-wrap{max-width:none;flex:1;}
+  #mobile-bar{display:flex;}
+  /* Filters — slide in from left */
+  #sidebar{position:fixed!important;top:54px;left:0;bottom:0;width:85%!important;max-height:none;border-right:1px solid var(--border);border-top:none;border-radius:0 10px 10px 0;z-index:500;transform:translateX(-100%);transition:transform .25s ease;padding-bottom:24px;}
+  #sidebar::before{display:none;}
+  #sidebar.open{transform:translateX(0);}
+  /* List — horizontal card strip pinned to bottom */
+  #list-panel{display:none!important;position:fixed!important;bottom:0!important;left:0!important;right:0!important;top:auto!important;width:100%!important;min-width:0!important;height:220px!important;max-height:220px!important;border-left:none!important;border-top:1px solid var(--border)!important;border-radius:0!important;z-index:490!important;flex-direction:column!important;overflow:hidden!important;transform:none!important;transition:none!important;}
+  #list-panel.mobile-open{display:flex!important;}
+  #list-panel.collapsed{width:100%!important;min-width:0!important;}
+  #list-panel::before{display:none!important;}
+  #list-cards{flex-direction:row!important;overflow-x:auto!important;overflow-y:hidden!important;flex-wrap:nowrap!important;padding:8px 14px 10px!important;scrollbar-width:none;}
+  #list-cards::-webkit-scrollbar{display:none;}
+  .lc-card{min-width:250px!important;max-width:250px!important;flex-shrink:0!important;}
+  /* Saved — slide in from right (existing behaviour) */
+  #fav-panel{position:fixed!important;width:100%;border-left:none;border-top:1px solid var(--border);top:54px;bottom:0;height:auto;border-radius:0;}
+  #loc-btn{bottom:90px;right:14px;}
+}
+
+/* ── FORCED MOBILE VIEW (desktop toggle) ── */
+body.force-mobile #sidebar-toggle{display:none!important;}
+body.force-mobile #list-toggle{display:none!important;}
+body.force-mobile #count-badge{display:none;}
+body.force-mobile #fav-btn{display:none!important;}
+body.force-mobile #mobile-filter-btn{display:none!important;}
+body.force-mobile .hdiv{display:none;}
+body.force-mobile #search-wrap{max-width:none!important;flex:1;}
+body.force-mobile #mobile-bar{display:flex;}
+/* Filters — slide in from left */
+body.force-mobile #sidebar{position:fixed!important;top:54px!important;left:0!important;bottom:0!important;right:auto!important;width:85%!important;max-height:none!important;border-right:1px solid var(--border)!important;border-top:none!important;border-radius:0 10px 10px 0!important;z-index:500!important;transform:translateX(-100%)!important;transition:transform .25s ease!important;padding-bottom:20px!important;}
+body.force-mobile #sidebar::before{display:none!important;}
+body.force-mobile #sidebar.open{transform:translateX(0)!important;}
+/* List — horizontal card strip pinned to bottom */
+body.force-mobile #list-panel{display:none!important;position:fixed!important;bottom:0!important;left:0!important;right:0!important;top:auto!important;width:100%!important;min-width:0!important;height:220px!important;max-height:220px!important;border-left:none!important;border-top:1px solid var(--border)!important;border-radius:0!important;z-index:490!important;flex-direction:column!important;overflow:hidden!important;transform:none!important;transition:none!important;}
+body.force-mobile #list-panel.mobile-open{display:flex!important;}
+body.force-mobile #list-panel.collapsed{width:100%!important;min-width:0!important;}
+body.force-mobile #list-panel::before{display:none!important;}
+body.force-mobile #list-cards{flex-direction:row!important;overflow-x:auto!important;overflow-y:hidden!important;flex-wrap:nowrap!important;padding:8px 14px 10px!important;scrollbar-width:none;}
+body.force-mobile #list-cards::-webkit-scrollbar{display:none;}
+body.force-mobile .lc-card{min-width:250px!important;max-width:250px!important;flex-shrink:0!important;}
+body.force-mobile #loc-btn{bottom:90px!important;right:14px!important;}
+/* Saved — slide in from right */
+body.force-mobile #fav-panel{position:fixed!important;width:100%!important;border-left:none!important;border-top:1px solid var(--border)!important;top:54px!important;bottom:0!important;height:auto!important;border-radius:0!important;}
+
+/* ── LIST PANEL ── */
+#list-panel{width:var(--list);min-width:var(--list);background:var(--white);border-left:1px solid var(--border);overflow:hidden;flex-shrink:0;display:flex;flex-direction:column;transition:width .25s ease,min-width .25s ease,border-color .25s ease;}
+#list-panel.collapsed{width:0;min-width:0;border-left-color:transparent;}
+#list-toggle{position:absolute;right:var(--list);top:50%;transform:translateY(-50%);width:16px;height:48px;background:var(--white);border:1px solid var(--border);border-right:none;border-radius:6px 0 0 6px;cursor:pointer;z-index:460;display:flex;align-items:center;justify-content:center;font-size:0.8rem;color:var(--muted);transition:right .25s ease;box-shadow:-2px 0 6px rgba(0,0,0,.07);}
+#list-toggle:hover{color:var(--accent);}
+#layout.list-collapsed #list-toggle{right:0;border-left:none;border-right:1px solid var(--border);border-radius:0 6px 6px 0;}
+#list-header{padding:14px 16px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:var(--white);}
+#list-title{font-size:.78rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
+#list-close{background:none;border:none;cursor:pointer;font-size:1rem;color:var(--muted);line-height:1;}
+#list-close:hover{color:var(--text);}
+#list-cards{flex:1;min-height:0;padding:10px 12px 16px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;}
+.lc-card{border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--white);flex-shrink:0;}
+.lc-body{padding:10px 12px 12px;}
+.lc-top{display:flex;align-items:flex-start;justify-content:space-between;gap:6px;margin-bottom:3px;}
+.lc-name{font-weight:700;font-size:.88rem;color:var(--text);line-height:1.3;}
+.lc-stars{font-size:.8rem;font-weight:600;color:#e8a020;white-space:nowrap;flex-shrink:0;}
+.lc-meta{font-size:.7rem;color:var(--muted);margin-bottom:6px;}
+.lc-review{font-size:.74rem;color:#444;line-height:1.5;margin-bottom:8px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.lc-links{display:flex;gap:10px;margin-top:6px;}
+.lc-link{font-size:.7rem;color:var(--accent);text-decoration:none;font-weight:600;}
+.lc-link:hover{text-decoration:underline;}
+@media(max-width:700px){#list-toggle{display:none!important;}#list-panel{display:none!important;}}
+.misc-check{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;}
+.misc-check input{display:none;}
+.misc-box{width:15px;height:15px;border:1.5px solid var(--border);border-radius:3px;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:background .12s,border-color .12s;}
+.misc-check input:checked+.misc-box{background:var(--accent);border-color:var(--accent);}
+.misc-check input:checked+.misc-box::after{content:'✓';color:#fff;font-size:0.6rem;font-weight:700;line-height:1;}
+.misc-text{font-size:0.78rem;color:var(--text);}
+</style>
+</head>
+<body>
+
+<div id="header">
+  <h1>Paris <em>Food Guide</em></h1>
+  <div class="hdiv"></div>
+  <div id="search-wrap">
+    <span class="si">⌕</span>
+    <input type="text" id="search" placeholder="Search: name, dish, vibe… (Enter)" autocomplete="off">
+  </div>
+  <div id="hdr-right">
+    <div id="count-badge"><strong id="count">0</strong> places</div>
+    <button id="view-toggle" class="hdr-btn">📱 Mobile view</button>
+    <button id="fav-btn" class="hdr-btn">♥ Saved <span class="fav-count" id="fav-count-badge">0</span></button>
+    <button id="mobile-filter-btn" class="hdr-btn">⊟ Filters</button>
+  </div>
+</div>
+
+<div id="mobile-overlay"></div>
+
+<div id="layout">
+  <button id="sidebar-toggle" title="Toggle filters">‹</button>
+  <div id="sidebar">
+    <div id="sidebar-mob-header">
+      <span>Filters</span>
+      <button id="sidebar-mob-close">✕</button>
+    </div>
+    <div class="fs">
+      <div class="ft">Meal</div>
+      <div class="meal-row" id="meal-filters">
+        <button class="meal-btn on" data-meal="breakfast">🌅 Breakfast</button>
+        <button class="meal-btn on" data-meal="lunch">☀️ Lunch</button>
+        <button class="meal-btn on" data-meal="dinner">🌙 Dinner</button>
+        <button class="meal-btn on" data-meal="snack">🥐 Snack</button>
+      </div>
+    </div>
+    <div class="fs">
+      <div class="ft">Experience Type</div>
+      <div class="exp-wrap">
+        <input type="range" id="exp-slider" min="0" max="3" step="1" value="3">
+        <div class="exp-labels">
+          <span id="exp-l0">Grab &amp; Go</span>
+          <span id="exp-l1">Casual Sit-Down</span>
+          <span id="exp-l2">Fine Dining</span>
+          <span id="exp-l3" class="active">Open To Anything</span>
+        </div>
+      </div>
+    </div>
+    <div class="fs">
+      <div class="ft">Arrondissement</div>
+      <div class="arr-grid" id="arr-filters"></div>
+    </div>
+    <div class="fs">
+      <div class="ft">Price</div>
+      <div class="price-row" id="price-filters">
+        <button class="price-btn on" data-price="€">€</button>
+        <button class="price-btn on" data-price="€€">€€</button>
+        <button class="price-btn on" data-price="€€€">€€€</button>
+        <button class="price-btn on" data-price="€€€€">€€€€</button>
+      </div>
+    </div>
+    <div class="fs" style="margin-bottom:12px;">
+      <div class="ft">More</div>
+      <label class="misc-check" id="locals-label">
+        <input type="checkbox" id="locals-filter">
+        <span class="misc-box"></span>
+        <span class="misc-text">Locals' Favorite</span>
+      </label>
+    </div>
+    <button id="reset-btn">↺ Reset all filters</button>
+  </div>
+
+  <div id="map">
+    <div id="loc-btn" title="Near me">📍</div>
+  </div>
+
+  <div id="mobile-bar">
+    <button class="mbar-pill" id="mbar-filter-btn">⊟ Filters</button>
+    <button class="mbar-pill" id="mbar-list-btn">≡ List <span class="mbar-sub" id="mbar-count"></span></button>
+    <button class="mbar-pill" id="mbar-fav-btn">♥ Saved <span class="mbar-badge" id="mbar-fav-badge">0</span></button>
+  </div>
+
+  <button id="list-toggle" title="Toggle list view">›</button>
+  <div id="list-panel">
+    <div id="list-header">
+      <span id="list-title">0 places</span>
+      <button id="list-close">✕</button>
+    </div>
+    <div id="list-cards"></div>
+  </div>
+
+  <div id="fav-panel">
+    <div id="fav-header">
+      <h3>Saved Places</h3>
+      <button id="fav-close">✕</button>
+    </div>
+    <div id="fav-list"></div>
+    <div id="fav-actions">
+      <button class="fav-export-btn primary" id="export-gmaps">Open all in Google Maps</button>
+      <button class="fav-export-btn" id="export-copy">Copy list to clipboard</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script>
+// ─── CATEGORIES ───────────────────────────────────────────────────────────────
+const CAT_GROUPS = [
+  {key:"Bakery & Pâtisserie", short:"Pâtisserie",  color:"#b8864e", cats:["Bakery","Sweets"]},
+  {key:"Bistro & Brasserie",  short:"Brasserie",  color:"#9b4444", cats:["Bistro","Brasserie"]},
+  {key:"Steakhouse",          short:"Steakhouse", color:"#5c2d2d", cats:["Steakhouse"]},
+  {key:"Fine Dining",         short:"Fine Dining",color:"#3d5a7a", cats:["Fine Dining"]},
+  {key:"Italian & Pizza",     short:"Italian",    color:"#c47a3a", cats:["Italian"]},
+  {key:"Seafood",             short:"Fruits de Mer",color:"#4a7a9b", cats:["Seafood"]},
+  {key:"Wine & Bar",          short:"Cave à Vin", color:"#7a4f7a", cats:["Wine Bar"]},
+  {key:"Café & Coffee",       short:"Café",       color:"#7a5c4a", cats:["Coffee","Café"]},
+  {key:"International",       short:"International",color:"#4a8a7a", cats:["International"]},
+  {key:"Casual & Street Food",short:"Casual",     color:"#6a8a58", cats:["Casual","Crêperie","BBQ"]},
+  {key:"Market & Specialty",  short:"Épicerie",   color:"#5a7a6a", cats:["Market","Specialty"]},
+];
+const catToGroup={};
+CAT_GROUPS.forEach(g=>g.cats.forEach(c=>{catToGroup[c]=g.key;}));
+function getGroup(c){return catToGroup[c]||c;}
+function getGroupInfo(c){return CAT_GROUPS.find(g=>g.key===catToGroup[c])||{key:c,color:"#888"};}
+
+
+// ─── PHOTOS ───────────────────────────────────────────────────────────────────
+const U='https://images.unsplash.com/photo-';
+const PHOTOS={
+  "Bakery & Pâtisserie":[
+    U+'1509440159596-0249088772ff?w=350&h=220&fit=crop&auto=format&q=75',
+    U+'1555507036-ab1f4038808a?w=350&h=220&fit=crop&auto=format&q=75',
+    U+'1607478900766-ebe98d485652?w=350&h=220&fit=crop&auto=format&q=75',
+    U+'1464219789935-c2d9d9aba644?w=350&h=220&fit=crop&auto=format&q=75',
+  ],
+  "Bistro & Brasserie":[
+    U+'1414235077428-338989a2e8c0?w=350&h=220&fit=crop&auto=format&q=75',
+    U+'1547592180-85f173990554?w=350&h=220&fit=crop&auto=format&q=75',
+    U+'1504674900247-0877df9cc836?w=350&h=220&fit=crop&auto=format&q=75',
+    U+'1476224203421-74177e022103?w=350&h=220&fit=crop&auto=format&q=75',
+  ],
+  "Steakhouse":[
+    U+'1544025162-d76538b14393?w=350&h=220&fit=crop&auto=format&q=75',
+    U+'1558030137-a47cf1d6c996?w=350&h=220&fit=crop&auto=format&q=75',
+    U+'1546069901-d5bfd2cbfb1f?w=350&h=220&fit=crop&auto=format&q=75',
+    U+'1529692236671-f1f6cf9683ba?w=350&h=220&fit=crop&auto=format&q=75',
+  ],
+  "Fine Dining":[
+    U+'1414235077428-338989a2e8c0?w=350&h=220&fit=crop&auto=format&q=75',
+    U+'1540189549336-e6e99c397a17?w=350&h=220&fit=crop&auto=format&q=75',
+    U+'1467003909585-2f8a72700288?w=350&h=220&fit=crop&auto=format&q=75',
+    U+'1606914501449-51f4c3fbb4bb?w=350&h=220&fit=crop&auto=format&q=75',
+  ],
+  "Italian & Pizza":[
+    U+'1565299624946-b28f40a0ae38?w=350&h=220&fit=crop&auto=format&q=75',
+    U+'1548087013-cbf28f5f4ae9?w=350&h=220&fit=crop&auto=format&q=75',
+    U+'1555396273-367ea4eb4db5?w=350&h=220&fit=crop&auto=format&q=75',
+    U+'1498579150354-4cee2f9f2b78?w=350&h=220&fit=crop&auto=format&q=75',
+  ],
+  "Seafood":[
+    U+'1578662996442-48f60103fc96?w=350&h=220&fit=crop&auto=format&q=75',
+    U+'1519708227468-573f6765a3c7?w=350&h=220&fit=crop&auto=format&q=75',
+    U+'1553621042-f6e147245754?w=350&h=220&fit=crop&auto=format&q=75',
+    U+'1559847812-f1ca4c9efddb?w=350&h=220&fit=crop&auto=format&q=75',
+  ],
+  "Wine & Bar":[
+    U+'1510812431401-41d2bd2722f3?w=350&h=220&fit=crop&auto=format&q=75',
+    U+'1474722883778-792e7c97a68e?w=350&h=220&fit=crop&auto=format&q=75',
+    U+'1485963631004-f2f00b1d6606?w=350&h=220&fit=crop&auto=format&q=75',
+    U+'1516594915697-7b00eebd06bc?w=350&h=220&fit=crop&auto=format&q=75',
+  ],
+  "Café & Coffee":[
+    U+'1509042239860-f550ce710b93?w=350&h=220&fit=crop&auto=format&q=75',
+    U+'1461023058943-07fcbe16d735?w=350&h=220&fit=crop&auto=format&q=75',
+    U+'1495474472287-4d71f31ae435?w=350&h=220&fit=crop&auto=format&q=75',
+    U+'1572442388795-20e53038e73e?w=350&h=220&fit=crop&auto=format&q=75',
+  ],
+  "International":[
+    U+'1476224203421-74177e022103?w=350&h=220&fit=crop&auto=format&q=75',
+    U+'1455619452474-8efb4a4d61bd?w=350&h=220&fit=crop&auto=format&q=75',
+    U+'1565557623262-b51ff475583a?w=350&h=220&fit=crop&auto=format&q=75',
+    U+'1567188040023-ef3b51c8e553?w=350&h=220&fit=crop&auto=format&q=75',
+  ],
+  "Casual & Street Food":[
+    U+'1551782045-a5f67f50d850?w=350&h=220&fit=crop&auto=format&q=75',
+    U+'1565058379802-bbe93b4f07fe?w=350&h=220&fit=crop&auto=format&q=75',
+    U+'1571091718767-18b5b1457add?w=350&h=220&fit=crop&auto=format&q=75',
+    U+'1504544750208-a8b5b3d4e5bc?w=350&h=220&fit=crop&auto=format&q=75',
+  ],
+  "Market & Specialty":[
+    U+'1488459716781-26b3c3a3c26b?w=350&h=220&fit=crop&auto=format&q=75',
+    U+'1567954970774-c9c66d737a19?w=350&h=220&fit=crop&auto=format&q=75',
+    U+'1542838132-92c53300491e?w=350&h=220&fit=crop&auto=format&q=75',
+    U+'1473093226795-af7f65f5eba4?w=350&h=220&fit=crop&auto=format&q=75',
+  ],
+};
+function getPhotos(p){
+  const pool=PHOTOS[getGroup(p.cat)]||PHOTOS["Bistro & Brasserie"];
+  const h=p.name.split('').reduce((a,c)=>a+c.charCodeAt(0),0);
+  const n=pool.length;
+  const seen=new Set();const out=[];
+  for(const i of [h%n,(h+1)%n,(h+2)%n]){if(!seen.has(i)){seen.add(i);out.push(pool[i]);}}
+  return out;
+}
+
+// ─── WEBSITES ─────────────────────────────────────────────────────────────────
+const WEBSITES={
+  "Angelina":                       "https://www.angelina-paris.fr",
+  "Café de Flore":                  "https://www.cafedeflore.fr",
+  "Septime":                        "https://www.septime-charonne.fr",
+  "Clamato":                        "https://www.clamato-charonne.fr",
+  "Au Passage":                     "https://www.restaurant-aupassage.fr",
+  "Berthillon":                     "https://www.berthillon.fr",
+  "Bouillon Chartier":              "https://www.bouillon-chartier.com",
+  "Bouillon Chartier Grands Boulevards":"https://www.bouillon-chartier.com",
+  "Pierre Hermé":                   "https://www.pierreherme.com",
+  "Jacques Genin":                  "https://www.jacquesgenin.fr",
+  "Le Procope":                     "https://www.procope.com",
+  "Le Relais de l'Entrecôte":       "https://www.relaisdelentrecote.fr",
+  "Le Relais de l'Entrecôte (8th)": "https://www.relaisdelentrecote.fr",
+  "Cédric Grolet":                  "https://www.cedricgrolet.com",
+  "Daroco":                         "https://daroco.fr",
+  "Daroco 16":                      "https://daroco.fr",
+  "Pink Mamma":                     "https://www.bigmammagroup.com/fr/trattorias/pink-mamma",
+  "Pizzeria Popolare":              "https://www.bigmammagroup.com/fr/trattorias/pizzeria-popolare",
+  "Éric Kayser":                    "https://www.maison-kayser.com",
+  "L'Ami Jean":                     "https://www.lamijean.fr",
+  "Gloria Osteria":                 "https://gloriaosteria.fr",
+  "Le Grand Bain":                  "https://www.legrandbain.fr",
+  "La Rôtisserie d'Argent":         "https://www.larotisserie.fr",
+  "Coutume Café":                   "https://www.coutumecafe.com",
+  "KB Coffee Roasters":             "https://www.kbcoffeeroasters.com",
+  "Le Bon Georges":                 "https://www.lebongeorges.com",
+  "Géosmine":                       "https://www.geosmine.com",
+  "Buvette Paris":                  "https://www.ilovebuvette.com",
+  "La Grande Épicerie":             "https://www.lagrandeepicerie.com",
+  "Le Châteaubriand":               "https://www.lechateaubriand.net",
+  "Monsieur Bleu":                  "https://www.monsieurbleu.com",
+  "Carette":                        "https://www.carette-paris.fr",
+  "Allard":                         "https://www.restaurant-allard.fr",
+  "Bistrot Paul Bert":              "https://www.bistrotpaulbert.fr",
+  "La Dernière Goutte":             "https://www.laderniegoutte.com",
+  "Chez Aline":                     "https://www.chezaline.com",
+  "Au Pied de Cochon":              "https://www.pieddecochon.com",
+  "Le Grand Véfour":               "https://www.grand-vefour.com",
+  "La Tour d'Argent":              "https://www.latourdargent.com",
+  "Le Jules Verne":                "https://www.lejulesverne-paris.com",
+  "Guy Savoy":                     "https://www.guysavoy.com",
+  "Brasserie Lipp":                "https://www.brasserielipp.fr",
+  "Les Deux Magots":               "https://www.lesdeuxmagots.fr",
+  "Le Grand Colbert":              "https://www.legrandcolbert.fr",
+  "La Coupole":                    "https://www.lacoupole-paris.com",
+  "Le Train Bleu":                 "https://www.le-train-bleu.com",
+  "Breizh Café":                   "https://www.breizhcafe.com",
+  "Fontaine de Mars":              "https://www.fontainedemars.com",
+  "Bouillon Pigalle":              "https://www.bouillonpigalle.com",
+  "Holybelly 5":                   "https://www.holybelly.fr",
+  "Du Pain et des Idées":          "https://www.dupainetdesidees.com",
+  "L'Atelier de Joël Robuchon":    "https://www.joel-robuchon.com",
+  "L'Ambroisie":                   "https://www.ambroisie-paris.com",
+};
+
+// ─── RATINGS (Google stars) ────────────────────────────────────────────────────
+const RATINGS={
+  // 1st
+  "Le Petit Vendôme":4.3,"Cédric Grolet":4.7,"BO&MIE":4.5,"Boulangerie Joseph":4.4,
+  "Angelina":4.3,"Au Pied de Cochon":4.1,"Le Louchébem":4.3,"Ferdi":4.4,
+  "Café Nuances":4.6,"Chez Suzette":4.3,"La Petite Samaritain":4.2,
+  "Big Fernand":4.1,"Chez Denise":4.4,
+  // 2nd
+  "Stévenot":4.3,"Pizzeria Popolare":4.3,"Bouillon Chartier":4.4,"Daroco":4.5,
+  "Le Valentin":4.4,"FTG":4.4,"Little Baobei":4.5,"Label'ge Frite":4.5,
+  "Chez Georges":4.4,"Billie":4.3,
+  // 3rd
+  "Bachir":4.6,"Caractère de Cochon":4.4,"Partisan Café":4.7,
+  "Janet by Homer":4.5,"Parcelles":4.5,
+  // 4th
+  "Hure Créateur de Plaisir":4.3,"Aux Petites Cakes":4.5,"Back In Black Coffee":4.7,
+  "Berthillon":4.5,"Bistrot des Tournelles":4.4,
+  // 5th
+  "La Maison d'Isabelle":4.8,"A. Lacroix Pâtissier":4.6,"Boulangerie L'Essentiel":4.5,
+  "Le Cèdre":4.2,"Tzeferakos":4.1,"La Crêperie":4.2,"La Rôtisserie d'Argent":4.3,
+  // 6th
+  "La Grande Épicerie":4.4,"Cul de Couchon":4.5,"Crêperie BOBO":4.2,
+  "Joël l'Atelier":4.4,"Le Bonaparte":4.2,"La Jacobine":4.2,"Arnaud Larher":4.6,
+  "Éric Kayser":4.4,"Viandas de Salamanca":4.3,"Richart":4.4,"Le Procope":4.1,
+  "La Dernière Goutte":4.5,"Bistro des Augustins":4.3,"Café de Flore":4.2,
+  "Le Relais de l'Entrecôte":4.3,"Des Gâteaux et du Pain":4.8,"Chez Bartolo":4.3,
+  "Pizza Vesuvio":4.1,"Chez le Libanais":4.1,"Le Camion qui Fume":4.3,
+  "Crêperie Française":4.1,"Madison Galland":4.5,"Allard":4.2,
+  "Joséphine Chez Dumonet":4.5,
+  // 7th
+  "Boulangerie Laurent B":4.3,"Liberté":4.6,"Café Nano":4.2,"Jacques Genin":4.7,
+  "Pierre Hermé":4.6,"Chez Germaine":4.3,"Amalfi":4.2,"Chez Pippo":4.3,
+  "Le Petit Cler":4.3,"Maison Bergeron":4.4,"Coutume Café":4.6,
+  "La Dernière Goutte (7th)":4.4,"L'Ami Jean":4.5,"Gloria Osteria":4.5,
+  // 8th
+  "Maison Julambre":4.3,"Le Relais de l'Entrecôte (8th)":4.3,"Chez Savy":4.4,
+  "Le Grand Café":4.2,
+  // 9th
+  "Galeries Lafayette Gourmet":4.3,"Chez Cléopâtre":4.2,"KB Coffee Roasters":4.6,
+  "Le Bon Georges":4.7,"Le Pantruche":4.5,"Buvette Paris":4.5,
+  // 10th
+  "Bouillon Chartier Grands Boulevards":4.3,"Carton":4.4,"Les Arlots":4.5,
+  "Elbi":4.6,"Chez Marius":4.5,"Café Les Deux Gares":4.4,
+  // 11th
+  "Septime":4.6,"Clamato":4.7,"Au Passage":4.5,"Bistrot Paul Bert":4.6,
+  "Le Châteaubriand":4.5,"Astier":4.4,"Au Petit Panisse":4.4,
+  "Géosmine":4.5,"Jones":4.5,"Chez Aline":4.6,
+  // 12th
+  "Amarante":4.4,"Le Quincy":4.3,
+  // 14th
+  "Le Duc":4.4,"Le Severo":4.7,"Le Petit Sommelier":4.3,
+  // 16th
+  "Roy Chocolatier":4.5,"Carette":4.4,"Daroco 16":4.4,"Le Paris 16":4.2,
+  "Monsieur Bleu":4.2,
+  // 18th
+  "Boulangerie Alexine":4.5,"The Beans on Fire":4.6,"ACA Pigalle":4.3,
+  "Pink Mamma":4.4,
+  // 19th
+  "Le Cadoret":4.6,"Simonetta":4.3,
+  // 20th
+  "Le Baratin":4.7,"Le Grand Bain":4.5,
+  // new additions
+  // 1st
+  "Le Grand Véfour":4.5,"Le Soufflé":4.3,"L'Escargot de Montorgueil":4.2,"Louise Café":4.3,"Claus":4.5,
+  // 2nd
+  "Le Grand Colbert":4.2,"Brasserie Dubillot":4.2,"La Bourse et la Vie":4.5,
+  // 3rd
+  "Chez Janou":4.4,"Café des Musées":4.3,"Breizh Café":4.4,"Chez Jeanphi":4.5,"Bouillon République":4.2,"Fragments":4.6,"Babka Zana":4.7,
+  // 4th
+  "Au Bourguignon du Marais":4.4,"Saint Regis":4.3,"Camille":4.2,"L'Ambroisie":4.6,"L'As du Fallafel":4.4,"Sacha Finkelsztajn":4.5,
+  // 5th
+  "Chez René":4.3,"Le Petit Pontoise":4.2,"La Tour d'Argent":4.3,
+  // 6th
+  "Brasserie Lipp":4.1,"Les Deux Magots":4.1,"Chez Fernand Christine":4.3,"Les Éditeurs":4.2,"Brasserie des Prés":4.4,"La Vagenade":4.2,"Colvert":4.5,"Guy Savoy":4.6,"Le Jardin Saint-Germain":4.3,"La Grande Crèmerie":4.5,
+  // 7th
+  "Fontaine de Mars":4.3,"Les Cocottes":4.1,"Le Jules Verne":4.2,"L'Atelier de Joël Robuchon":4.3,
+  // 9th
+  "Bellanger Brasserie":4.3,
+  // 10th
+  "Holybelly 5":4.7,"Du Pain et des Idées":4.7,"La Fontaine de Belleville":4.4,"Bouillon Chartier Est":4.2,
+  // 11th
+  "L'Aller Retour":4.4,"Café Méricourt":4.5,"Café Paul Bert":4.4,
+  // 12th
+  "Le Train Bleu":4.3,
+  // 14th
+  "La Coupole":4.1,"Le Dôme":4.3,
+  // 15th
+  "Ciel de Paris":4.1,
+  // 17th
+  "Brutus Crêperie":4.5,
+  // 18th
+  "La Boîte aux Lettres":4.5,"Bouillon Pigalle":4.2,"Le Coq & Fils":4.5,"Le Refuge des Fondus":4.3,"Ose":4.4,
+};
+
+// ─── DATA ─────────────────────────────────────────────────────────────────────
+const places=[
+  // 1st
+  {name:"Le Petit Vendôme",      cat:"Bistro",      arr:1, price:"€€",   lat:48.8650,lng:2.3308,local:false,michelin:0,meals:["lunch","dinner"],tags:["fine-dining"],review:"Classic French bistro — rustic charcuterie, escargot, duck confit, tarte tatin.",source:"Les Frenchies Travel"},
+  {name:"Cédric Grolet",         cat:"Sweets",      arr:1, price:"€€",   lat:48.8680,lng:2.3342,local:false,michelin:0,meals:["breakfast","snack"],tags:["morning"],review:"World-famous pastry chef. Stunning fruit-shaped trompe-l'œil sculptures.",source:"Les Frenchies Travel"},
+  {name:"BO&MIE",                cat:"Bakery",      arr:1, price:"€",    lat:48.8598,lng:2.3458,local:true, michelin:0,meals:["breakfast","lunch","snack"],tags:["morning","cheap-eats","casual"],review:"Trendy bakery-bistro hybrid with excellent pastries and creative sandwiches.",source:"Les Frenchies Travel"},
+  {name:"Boulangerie Joseph",    cat:"Bakery",      arr:1, price:"€",    lat:48.8605,lng:2.3440,local:true, michelin:0,meals:["breakfast","snack"],tags:["morning","cheap-eats","casual"],review:"Outstanding traditional Parisian boulangerie in Les Halles.",source:"Les Frenchies Travel"},
+  {name:"Angelina",              cat:"Café",        arr:1, price:"€€",   lat:48.8637,lng:2.3302,local:false,michelin:0,meals:["breakfast","lunch","snack"],tags:["morning"],review:"Iconic since 1903. Famous for the richest hot chocolate in Paris and the legendary mont-blanc.",source:"Les Frenchies Travel"},
+  {name:"Au Pied de Cochon",     cat:"Brasserie",   arr:1, price:"€€€",  lat:48.8624,lng:2.3480,local:false,michelin:0,meals:["breakfast","lunch","dinner"],tags:[],review:"Open 24/7 since 1947. Les Halles institution — pig's trotters, onion soup, fruits de mer.",source:"Les Frenchies Travel"},
+  {name:"Le Louchébem",          cat:"Steakhouse",  arr:1, price:"€€€",  lat:48.8594,lng:2.3460,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual","fine-dining"],review:"Legendary Les Halles butcher-steakhouse. Great entrecôte in a carnivore's paradise.",source:"Les Frenchies Travel"},
+  {name:"Ferdi",                 cat:"Casual",      arr:1, price:"€€",   lat:48.8646,lng:2.3251,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual"],review:"Celebrity-loved casual spot near Palais Royal. Famous for wagyu burgers and excellent cocktails.",source:"Les Frenchies Travel"},
+  {name:"Café Nuances",          cat:"Coffee",      arr:1, price:"€",    lat:48.8625,lng:2.3380,local:true, michelin:0,meals:["breakfast","snack"],tags:["morning","cheap-eats","casual"],review:"Specialty coffee in a charming 1st arrondissement setting.",source:"Les Frenchies Travel"},
+  {name:"Chez Suzette",          cat:"Crêperie",    arr:1, price:"€€",   lat:48.8545,lng:2.3452,local:false,michelin:0,meals:["breakfast","lunch","snack"],tags:[],review:"Sweet corner bistro on Île de la Cité — classic crêpes Suzette done right.",source:"Les Frenchies Travel"},
+  {name:"La Petite Samaritain",  cat:"Bistro",      arr:1, price:"€€",   lat:48.8574,lng:2.3499,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual"],review:"Classic Parisian bistro near the Seine — reliable, affordable, charming.",source:"Les Frenchies Travel"},
+  {name:"Big Fernand",           cat:"Casual",      arr:1, price:"€€",   lat:48.8615,lng:2.3420,local:false,michelin:0,meals:["lunch","dinner"],tags:["cheap-eats"],review:"Artisanal French-style burgers with hand-cut fries. Quality meat in a casual setting.",source:"Les Frenchies Travel"},
+  {name:"Chez Denise",           cat:"Bistro",      arr:1, price:"€€",   lat:48.8620,lng:2.3470,local:true, michelin:0,meals:["dinner"],tags:["casual","fine-dining"],review:"Gut-busting portions in a classic Les Halles setting. Late-night Paris institution.",source:"The Infatuation"},
+
+  // 2nd
+  {name:"Stévenot",              cat:"BBQ",         arr:2, price:"€€",   lat:48.8637,lng:2.3502,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual"],review:"Excellent BBQ in a sleek 2nd arrondissement setting. Great for meat lovers.",source:"Les Frenchies Travel"},
+  {name:"Pizzeria Popolare",     cat:"Italian",     arr:2, price:"€",    lat:48.8662,lng:2.3513,local:false,michelin:0,meals:["lunch","dinner"],tags:["cheap-eats"],review:"Big Mamma group's affordable Neapolitan pizza. Long queues, totally worth it.",source:"Les Frenchies Travel"},
+  {name:"Bouillon Chartier",     cat:"Brasserie",   arr:2, price:"€",    lat:48.8669,lng:2.3466,local:false,michelin:0,meals:["lunch","dinner"],tags:["cheap-eats"],review:"Classic Parisian brasserie with impossibly cheap French classics. Iconic atmosphere.",source:"Les Frenchies Travel"},
+  {name:"Daroco",                cat:"Italian",     arr:2, price:"€€",   lat:48.8657,lng:2.3419,local:true, michelin:0,meals:["lunch","dinner"],tags:["fine-dining","casual"],review:"Stunning former Yves Saint Laurent boutique, now serving exceptional pizzas and pastas.",source:"Les Frenchies Travel"},
+  {name:"Le Valentin",           cat:"Bakery",      arr:2, price:"€",    lat:48.8660,lng:2.3408,local:true, michelin:0,meals:["breakfast","snack"],tags:["morning","cheap-eats","casual"],review:"Charming bakery-café in the Galerie Vivienne area.",source:"Les Frenchies Travel"},
+  {name:"FTG",                   cat:"Bistro",      arr:2, price:"€€€",  lat:48.8658,lng:2.3475,local:true, michelin:0,meals:["lunch","dinner"],tags:["fine-dining","casual"],review:"Sister to a Michelin-starred restaurant — outstanding value fine dining.",source:"Les Frenchies Travel"},
+  {name:"Little Baobei",         cat:"Casual",      arr:2, price:"€",    lat:48.8670,lng:2.3490,local:true, michelin:0,meals:["lunch","snack"],tags:["cheap-eats","casual"],review:"Creative Asian-inspired sandwiches with a cult following in Paris.",source:"Les Frenchies Travel"},
+  {name:"Label'ge Frite",        cat:"Casual",      arr:2, price:"€",    lat:48.8665,lng:2.3485,local:true, michelin:0,meals:["lunch","dinner"],tags:["cheap-eats","casual"],review:"Artisan Belgian frites — arguably the best in Paris, with inventive sauces.",source:"Les Frenchies Travel"},
+  {name:"Chez Georges",          cat:"Bistro",      arr:2, price:"€€€",  lat:48.8659,lng:2.3459,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual","fine-dining"],review:"Operating since 1964 — the ultimate Parisian institution. Rillettes, profiteroles, generous portions.",source:"World of Mouth"},
+  {name:"Billie",                cat:"International",arr:2,price:"€€",   lat:48.8668,lng:2.3399,local:true, michelin:0,meals:["lunch","dinner"],tags:["fine-dining","casual"],review:"Ultra-chic décor, boldly seductive Mediterranean dishes. Pastas €19–31.",source:"Do It In Paris"},
+
+  // 3rd
+  {name:"Bachir",                cat:"Sweets",      arr:3, price:"€",    lat:48.8630,lng:2.3575,local:true, michelin:0,meals:["snack"],tags:["cheap-eats","casual"],review:"Lebanese-style ice cream. Rose water and pistachio flavors — queue out the door in summer.",source:"Les Frenchies Travel"},
+  {name:"Caractère de Cochon",   cat:"Specialty",   arr:3, price:"€€",   lat:48.8618,lng:2.3593,local:true, michelin:0,meals:["lunch","snack"],tags:["casual"],review:"Top-notch charcuterie and Parisian meat shop in the Haut Marais.",source:"Les Frenchies Travel"},
+  {name:"Partisan Café",         cat:"Coffee",      arr:3, price:"€",    lat:48.8607,lng:2.3561,local:true, michelin:0,meals:["breakfast","snack"],tags:["morning","cheap-eats","casual"],review:"Excellent specialty coffee in the Marais. Calm, craft-focused space.",source:"Les Frenchies Travel"},
+  {name:"Janet by Homer",        cat:"Casual",      arr:3, price:"€",    lat:48.8618,lng:2.3580,local:true, michelin:0,meals:["lunch","snack"],tags:["cheap-eats","casual"],review:"Creative sandwiches from the Homer team. Inventive fillings in excellent bread.",source:"Les Frenchies Travel"},
+  {name:"Parcelles",             cat:"Bistro",      arr:3, price:"€€€",  lat:48.8612,lng:2.3556,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual","fine-dining","drinks"],review:"Fresh take on French classics. Relaxed vibes with food that will make you smile. Great natural wine.",source:"World of Mouth"},
+
+  // 4th
+  {name:"Hure Créateur de Plaisir",cat:"Bakery",   arr:4, price:"€",    lat:48.8545,lng:2.3495,local:true, michelin:0,meals:["breakfast","snack"],tags:["morning","cheap-eats","casual"],review:"Artisan bakery in the heart of the Marais.",source:"Les Frenchies Travel"},
+  {name:"Aux Petites Cakes",     cat:"Sweets",      arr:4, price:"€",    lat:48.8538,lng:2.3547,local:true, michelin:0,meals:["breakfast","snack"],tags:["morning","cheap-eats","casual"],review:"Delightful little cake shop in the Marais, beloved by locals.",source:"Les Frenchies Travel"},
+  {name:"Back In Black Coffee",  cat:"Coffee",      arr:4, price:"€",    lat:48.8555,lng:2.3523,local:true, michelin:0,meals:["breakfast","snack"],tags:["morning","cheap-eats","casual"],review:"Excellent specialty coffee in the Marais. Minimalist vibe, serious espresso.",source:"Les Frenchies Travel"},
+  {name:"Berthillon",            cat:"Sweets",      arr:4, price:"€",    lat:48.8521,lng:2.3557,local:false,michelin:0,meals:["snack"],tags:["cheap-eats"],review:"Paris's most famous ice cream since 1954 on Île Saint-Louis. Seasonal, natural flavors.",source:"Les Frenchies Travel"},
+  {name:"Bistrot des Tournelles",cat:"Bistro",      arr:4, price:"€€",   lat:48.8559,lng:2.3625,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual","fine-dining"],review:"Throwback vibe and excellent French classics in the Marais. Try the steak tartare.",source:"The Infatuation"},
+
+  // 5th
+  {name:"La Maison d'Isabelle",  cat:"Bakery",      arr:5, price:"€",    lat:48.8497,lng:2.3479,local:true, michelin:0,meals:["breakfast","snack"],tags:["morning","cheap-eats","casual"],review:"Award-winning boulangerie. Exceptional croissants — regularly wins best-in-Paris.",source:"Les Frenchies Travel"},
+  {name:"A. Lacroix Pâtissier",  cat:"Bakery",      arr:5, price:"€€",   lat:48.8472,lng:2.3502,local:true, michelin:0,meals:["breakfast","snack"],tags:["morning","casual"],review:"Beautiful artisan pastries in the Latin Quarter. Seasonal, precise, stunning.",source:"Les Frenchies Travel"},
+  {name:"Boulangerie L'Essentiel",cat:"Bakery",     arr:5, price:"€",    lat:48.8483,lng:2.3460,local:true, michelin:0,meals:["breakfast","snack"],tags:["morning","cheap-eats","casual"],review:"Essential Latin Quarter bakery, exceptional sourdough bread.",source:"Les Frenchies Travel"},
+  {name:"Le Cèdre",              cat:"International",arr:5,price:"€€",   lat:48.8458,lng:2.3497,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual"],review:"Authentic Lebanese cuisine in the Latin Quarter. Mezze, kibbeh, excellent hummus.",source:"Les Frenchies Travel"},
+  {name:"Tzeferakos",            cat:"International",arr:5,price:"€€",   lat:48.8521,lng:2.3478,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual","cheap-eats"],review:"Reliable Greek restaurant in the 5th. Satisfying, straightforward Hellenic cooking.",source:"Les Frenchies Travel"},
+  {name:"La Crêperie",           cat:"Crêperie",    arr:5, price:"€",    lat:48.8468,lng:2.3456,local:true, michelin:0,meals:["breakfast","lunch","snack"],tags:["cheap-eats","casual"],review:"Classic Breton crêperie in the Latin Quarter. Savory galettes and sweet crêpes.",source:"Les Frenchies Travel"},
+  {name:"La Rôtisserie d'Argent",cat:"Fine Dining", arr:5, price:"€€€",  lat:48.8510,lng:2.3524,local:true, michelin:1,meals:["dinner"],tags:["fine-dining","fine-dining","casual"],review:"Michelin 1-star. Traditional French with rare exclusive cheeses. Views of Notre-Dame.",source:"World of Mouth"},
+
+  // 6th
+  {name:"La Grande Épicerie",    cat:"Market",      arr:6, price:"€€",   lat:48.8511,lng:2.3207,local:false,michelin:0,meals:["breakfast","lunch","snack"],tags:[],review:"The ultimate Parisian food hall. Exceptional produce, cheese, prepared foods, and wine.",source:"Les Frenchies Travel"},
+  {name:"Cul de Couchon",        cat:"Casual",      arr:6, price:"€",    lat:48.8498,lng:2.3305,local:true, michelin:0,meals:["lunch","snack"],tags:["cheap-eats","casual"],review:"Creative sandwiches in Saint-Germain. A local favourite for a quick but quality bite.",source:"Les Frenchies Travel"},
+  {name:"Crêperie BOBO",         cat:"Crêperie",    arr:6, price:"€",    lat:48.8507,lng:2.3355,local:true, michelin:0,meals:["breakfast","lunch","snack"],tags:["cheap-eats","casual"],review:"Sweet crêpes and indulgent desserts near Saint-Germain. Playful and casual.",source:"Les Frenchies Travel"},
+  {name:"Joël l'Atelier",        cat:"Bakery",      arr:6, price:"€€",   lat:48.8490,lng:2.3290,local:true, michelin:0,meals:["breakfast","snack"],tags:["morning","casual"],review:"Quality artisan bakery by Joël Defives. Excellent pastries and breads.",source:"Les Frenchies Travel"},
+  {name:"Le Bonaparte",          cat:"Café",        arr:6, price:"€",    lat:48.8539,lng:2.3328,local:false,michelin:0,meals:["breakfast","lunch"],tags:["morning"],review:"Iconic Saint-Germain café beloved by Parisians. People-watch from the terrace.",source:"Les Frenchies Travel"},
+  {name:"La Jacobine",           cat:"Bistro",      arr:6, price:"€€",   lat:48.8527,lng:2.3334,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual"],review:"Sit-down French dining in a cozy Saint-Germain atmosphere. Reliable and charming.",source:"Les Frenchies Travel"},
+  {name:"Arnaud Larher",         cat:"Sweets",      arr:6, price:"€€",   lat:48.8513,lng:2.3300,local:true, michelin:0,meals:["snack"],tags:["morning","casual"],review:"MOF pastry chef. Exquisite cakes and chocolates — one of Paris's finest chocolatiers.",source:"Les Frenchies Travel"},
+  {name:"Éric Kayser",           cat:"Bakery",      arr:6, price:"€",    lat:48.8526,lng:2.3348,local:false,michelin:0,meals:["breakfast","lunch","snack"],tags:["morning","cheap-eats"],review:"World-famous organic boulangerie. Exceptional sourdough, croissants, and eclairs.",source:"Les Frenchies Travel"},
+  {name:"Viandas de Salamanca",  cat:"Specialty",   arr:6, price:"€€",   lat:48.8519,lng:2.3270,local:true, michelin:0,meals:["lunch","snack"],tags:["casual"],review:"Excellent Spanish charcuterie and ibérico products. A foodie stop in Saint-Germain.",source:"Les Frenchies Travel"},
+  {name:"Richart",               cat:"Sweets",      arr:6, price:"€€",   lat:48.8508,lng:2.3290,local:false,michelin:0,meals:["snack"],tags:[],review:"Elegant chocolate boutique with architectural bonbons and refined flavors.",source:"Les Frenchies Travel"},
+  {name:"Le Procope",            cat:"Brasserie",   arr:6, price:"€€€",  lat:48.8524,lng:2.3375,local:false,michelin:0,meals:["lunch","dinner"],tags:["fine-dining"],review:"Paris's oldest café (est. 1686). Historic haunt of Voltaire, Rousseau, and Napoleon.",source:"Les Frenchies Travel"},
+  {name:"La Dernière Goutte",    cat:"Wine Bar",    arr:6, price:"€€",   lat:48.8502,lng:2.3352,local:true, michelin:0,meals:["dinner"],tags:["drinks","casual"],review:"Beloved independent wine shop and bar. Specializes in small-producer natural wines.",source:"Les Frenchies Travel"},
+  {name:"Bistro des Augustins",  cat:"Bistro",      arr:6, price:"€€",   lat:48.8537,lng:2.3400,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual"],review:"Excellent charcuterie and wines near Notre-Dame. Warm atmosphere, great value.",source:"Les Frenchies Travel"},
+  {name:"Café de Flore",         cat:"Café",        arr:6, price:"€€€",  lat:48.8541,lng:2.3336,local:false,michelin:0,meals:["breakfast","lunch"],tags:["morning"],review:"Legendary literary café — Sartre's former haunt. Must-experience in Paris. Famous hot chocolate.",source:"Les Frenchies Travel"},
+  {name:"Le Relais de l'Entrecôte",cat:"Steakhouse",arr:6,price:"€€",   lat:48.8544,lng:2.3305,local:false,michelin:0,meals:["lunch","dinner"],tags:[],review:"No menu needed — just how you want your steak. Famous secret walnut sauce. Unlimited fries.",source:"Les Frenchies Travel"},
+  {name:"Des Gâteaux et du Pain",cat:"Bakery",      arr:6, price:"€€",   lat:48.8532,lng:2.3275,local:true, michelin:0,meals:["breakfast","snack"],tags:["morning","casual"],review:"Claire Damon's stunning pâtisserie. Arguably Paris's finest tarts and seasonal creations.",source:"Les Frenchies Travel"},
+  {name:"Chez Bartolo",          cat:"Italian",     arr:6, price:"€€",   lat:48.8528,lng:2.3390,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual"],review:"Old-school Italian-French pizzeria, Saint-Germain classic since 1953.",source:"Les Frenchies Travel"},
+  {name:"Pizza Vesuvio",         cat:"Italian",     arr:6, price:"€",    lat:48.8516,lng:2.3415,local:true, michelin:0,meals:["lunch","dinner"],tags:["cheap-eats","casual"],review:"Casual Neapolitan pizza near Saint-Germain. Reliable, affordable, and tasty.",source:"Les Frenchies Travel"},
+  {name:"Chez le Libanais",      cat:"International",arr:6,price:"€€",   lat:48.8533,lng:2.3430,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual"],review:"Lebanese cuisine near Rue de Buci. Fresh mezze and grilled meats.",source:"Les Frenchies Travel"},
+  {name:"Le Camion qui Fume",    cat:"Casual",      arr:6, price:"€",    lat:48.8525,lng:2.3445,local:false,michelin:0,meals:["lunch","dinner"],tags:["cheap-eats"],review:"Paris's original gourmet burger spot. Quality beef, creative toppings, hand-cut fries.",source:"Les Frenchies Travel"},
+  {name:"Crêperie Française",    cat:"Crêperie",    arr:6, price:"€",    lat:48.8536,lng:2.3455,local:true, michelin:0,meals:["breakfast","lunch","snack"],tags:["cheap-eats","casual"],review:"Classic French crêperie in Saint-Germain — sweet and savory done simply and well.",source:"Les Frenchies Travel"},
+  {name:"Madison Galland",       cat:"Bakery",      arr:6, price:"€€",   lat:48.8522,lng:2.3318,local:true, michelin:0,meals:["breakfast","snack"],tags:["morning","casual"],review:"Exceptional pâtissier — elegant cakes and creative pastry in the 6th.",source:"Les Frenchies Travel"},
+  {name:"Allard",                cat:"Bistro",      arr:6, price:"€€€",  lat:48.8537,lng:2.3407,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual","fine-dining"],review:"Cozy, feels like dining in a friend's home. Burgundy-focused menu with excellent cheese.",source:"Journey of Doing"},
+  {name:"Joséphine Chez Dumonet",cat:"Bistro",      arr:6, price:"€€€",  lat:48.8447,lng:2.3268,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual","fine-dining"],review:"Classic French cooking worth travelling for. Half-portions available. Generous boeuf bourguignon.",source:"World of Mouth"},
+
+  // 7th
+  {name:"Boulangerie Laurent B", cat:"Bakery",      arr:7, price:"€",    lat:48.8584,lng:2.3041,local:true, michelin:0,meals:["breakfast","snack"],tags:["morning","cheap-eats","casual"],review:"Excellent local boulangerie in the 7th. Underrated gem.",source:"Les Frenchies Travel"},
+  {name:"Liberté",               cat:"Bakery",      arr:7, price:"€€",   lat:48.8570,lng:2.3100,local:true, michelin:0,meals:["breakfast","snack"],tags:["morning","casual"],review:"Outstanding craft bakery by Benoît Castel. Exceptional bread and pastries.",source:"Les Frenchies Travel"},
+  {name:"Café Nano",             cat:"Brasserie",   arr:7, price:"€€",   lat:48.8578,lng:2.3062,local:true, michelin:0,meals:["breakfast","lunch","dinner"],tags:["casual"],review:"Lively brasserie in the 7th with a great terrace and solid traditional menu.",source:"Les Frenchies Travel"},
+  {name:"Jacques Genin",         cat:"Sweets",      arr:7, price:"€€",   lat:48.8562,lng:2.3131,local:true, michelin:0,meals:["snack"],tags:["morning","casual"],review:"Master chocolatier and pâtissier. Exquisite caramels, ganaches, and millefeuille.",source:"Les Frenchies Travel"},
+  {name:"Pierre Hermé",          cat:"Sweets",      arr:7, price:"€€",   lat:48.8552,lng:2.3218,local:false,michelin:0,meals:["snack"],tags:["morning"],review:"'The Picasso of Pastry.' World's finest macarons and innovative flavor combinations.",source:"Les Frenchies Travel"},
+  {name:"Chez Germaine",         cat:"Bistro",      arr:7, price:"€€",   lat:48.8566,lng:2.3166,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual","cheap-eats"],review:"Affordable classic French cooking in the 7th. No-frills, honest, and delicious.",source:"Les Frenchies Travel"},
+  {name:"Amalfi",                cat:"Italian",     arr:7, price:"€€",   lat:48.8548,lng:2.3072,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual"],review:"Southern Italian cooking near Rue Cler. Fresh pasta, pizza, seasonal specials.",source:"Les Frenchies Travel"},
+  {name:"Chez Pippo",            cat:"Italian",     arr:7, price:"€€",   lat:48.8543,lng:2.3079,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual"],review:"Authentic Italian trattoria near Rue Cler. Roman-style pasta, convivial atmosphere.",source:"Les Frenchies Travel"},
+  {name:"Le Petit Cler",         cat:"Bistro",      arr:7, price:"€€",   lat:48.8554,lng:2.3058,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual"],review:"Charming sit-down bistro right on the Rue Cler market street. Perfect lunch stop.",source:"Les Frenchies Travel"},
+  {name:"Maison Bergeron",       cat:"Bakery",      arr:7, price:"€",    lat:48.8546,lng:2.3076,local:true, michelin:0,meals:["breakfast","lunch","snack"],tags:["morning","cheap-eats","casual"],review:"Excellent bakery-sandwiches-sweets combo. Rue Cler favourite.",source:"Les Frenchies Travel"},
+  {name:"Coutume Café",          cat:"Coffee",      arr:7, price:"€",    lat:48.8571,lng:2.3162,local:true, michelin:0,meals:["breakfast","snack"],tags:["morning","cheap-eats","casual"],review:"Paris's leading specialty coffee roaster. Serious coffee in a bright, airy space.",source:"Les Frenchies Travel"},
+  {name:"La Dernière Goutte (7th)",cat:"Wine Bar",  arr:7, price:"€€",   lat:48.8557,lng:2.3038,local:true, michelin:0,meals:["dinner"],tags:["drinks","casual"],review:"Wine shop and bar near Rue Cler specializing in French regional wines.",source:"Les Frenchies Travel"},
+  {name:"L'Ami Jean",            cat:"Bistro",      arr:7, price:"€€€",  lat:48.8601,lng:2.3060,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual","fine-dining"],review:"Energetic bistro near Champ de Mars. Generous Basque-influenced cooking by Stéphane Jégo.",source:"The Infatuation"},
+  {name:"Gloria Osteria",        cat:"Italian",     arr:7, price:"€€€",  lat:48.8620,lng:2.3215,local:true, michelin:0,meals:["dinner"],tags:["fine-dining","casual"],review:"Italian style and 70s décor. Top-quality ingredients. Black truffle gnocchi €35–55.",source:"Do It In Paris"},
+
+  // 8th
+  {name:"Maison Julambre",       cat:"Bakery",      arr:8, price:"€€",   lat:48.8762,lng:2.3077,local:true, michelin:0,meals:["breakfast","snack"],tags:["morning","casual"],review:"Premium artisan bakery in the 8th arrondissement.",source:"Les Frenchies Travel"},
+  {name:"Le Relais de l'Entrecôte (8th)",cat:"Steakhouse",arr:8,price:"€€",lat:48.8726,lng:2.3051,local:false,michelin:0,meals:["lunch","dinner"],tags:[],review:"The Frenchies' top steak-frites pick. Signature walnut sauce, unlimited fries.",source:"Les Frenchies Travel"},
+  {name:"Chez Savy",             cat:"Steakhouse",  arr:8, price:"€€",   lat:48.8726,lng:2.3101,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual"],review:"Old-school Parisian atmosphere, excellent steak frites. A Frenchies top pick.",source:"Les Frenchies Travel"},
+  {name:"Le Grand Café",         cat:"Brasserie",   arr:8, price:"€€€",  lat:48.8773,lng:2.3080,local:false,michelin:0,meals:["breakfast","lunch","dinner"],tags:["fine-dining"],review:"Majestic columns, marble finishes, warm velvet accents. An extraordinary address.",source:"Do It In Paris"},
+
+  // 9th
+  {name:"Galeries Lafayette Gourmet",cat:"Market",  arr:9, price:"€€",   lat:48.8745,lng:2.3325,local:false,michelin:0,meals:["breakfast","lunch","snack"],tags:[],review:"Spectacular gourmet food hall inside the iconic department store.",source:"Les Frenchies Travel"},
+  {name:"Chez Cléopâtre",        cat:"International",arr:9,price:"€€",   lat:48.8793,lng:2.3444,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual","cheap-eats"],review:"Mediterranean cuisine in the 9th. Warm, family-run, good value.",source:"Les Frenchies Travel"},
+  {name:"KB Coffee Roasters",    cat:"Coffee",      arr:9, price:"€",    lat:48.8818,lng:2.3369,local:true, michelin:0,meals:["breakfast","snack"],tags:["morning","cheap-eats","casual"],review:"Top specialty coffee roasters in Paris. Multiple locations, consistently excellent.",source:"Les Frenchies Travel"},
+  {name:"Le Bon Georges",        cat:"Bistro",      arr:9, price:"€€",   lat:48.8768,lng:2.3383,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual","fine-dining","drinks"],review:"Top class food, knowledgeable staff, extensive wine list. Wine Spectator Grand Award 2025.",source:"World of Mouth"},
+  {name:"Le Pantruche",          cat:"Bistro",      arr:9, price:"€€€",  lat:48.8795,lng:2.3408,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual","fine-dining"],review:"Cozy Pigalle bistro with nostalgic French dishes. Focus on seasonal ingredients.",source:"The Infatuation"},
+  {name:"Buvette Paris",         cat:"Wine Bar",    arr:9, price:"€€",   lat:48.8823,lng:2.3390,local:true, michelin:0,meals:["lunch","dinner"],tags:["drinks","fine-dining","casual"],review:"Parisian outpost of the beloved NYC wine bar. Intimate, excellent charcuterie.",source:"Various"},
+
+  // 10th
+  {name:"Bouillon Chartier Grands Boulevards",cat:"Brasserie",arr:10,price:"€",lat:48.8743,lng:2.3432,local:false,michelin:0,meals:["lunch","dinner"],tags:["cheap-eats"],review:"The original 1896 Bouillon Chartier. Unmissable institution. Three courses ~€15.",source:"Les Frenchies Travel"},
+  {name:"Carton",                cat:"Bakery",      arr:10,price:"€",    lat:48.8728,lng:2.3619,local:true, michelin:0,meals:["breakfast","snack"],tags:["morning","cheap-eats","casual"],review:"Quality bakery in the 10th arrondissement. Local favourite.",source:"Les Frenchies Travel"},
+  {name:"Les Arlots",            cat:"Bistro",      arr:10,price:"€€",   lat:48.8753,lng:2.3513,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual","drinks"],review:"Cozy ambiance with nostalgic comfort food. Legendary sausage and mash, duck terrine.",source:"Roadbook"},
+  {name:"Elbi",                  cat:"International",arr:10,price:"€€",  lat:48.8774,lng:2.3483,local:true, michelin:0,meals:["dinner"],tags:["casual","fine-dining"],review:"Egyptian gastronomy meets Parisian wine bar. Generous, authentic and impeccably executed.",source:"Do It In Paris"},
+  {name:"Chez Marius",           cat:"International",arr:10,price:"€€",  lat:48.8752,lng:2.3497,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual","fine-dining"],review:"Neo-Venetian Italian. Famous for marrow bone with beef tartare and tuna carpaccio.",source:"World of Mouth"},
+  {name:"Café Les Deux Gares",   cat:"Bistro",      arr:10,price:"€€",   lat:48.8771,lng:2.3593,local:true, michelin:0,meals:["breakfast","lunch","dinner"],tags:["casual"],review:"Classic Parisian bistro with a massive terrace. Great for people-watching.",source:"The Infatuation"},
+
+  // 11th
+  {name:"Septime",               cat:"Fine Dining", arr:11,price:"€€€€", lat:48.8533,lng:2.3820,local:true, michelin:1,meals:["dinner"],tags:["fine-dining","fine-dining","drinks","casual"],review:"Michelin-starred. Crab with pear vinegar, creamy egg yolk, apple-cider gelée. Book weeks ahead.",source:"Roadbook"},
+  {name:"Clamato",               cat:"Seafood",     arr:11,price:"€€€",  lat:48.8527,lng:2.3832,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual","fine-dining"],review:"No reservations — arrive early. Daily deliveries from Brittany & Basque country.",source:"Roadbook"},
+  {name:"Au Passage",            cat:"Wine Bar",    arr:11,price:"€€€",  lat:48.8641,lng:2.3769,local:true, michelin:0,meals:["dinner"],tags:["drinks","casual","fine-dining"],review:"Lively, laid-back wine bar with French small plates. Anthony Bourdain's favourite.",source:"Roadbook"},
+  {name:"Bistrot Paul Bert",     cat:"Steakhouse",  arr:11,price:"€€€",  lat:48.8527,lng:2.3845,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual","fine-dining"],review:"An institution to experience at least once. Some of the best steak in Paris.",source:"World of Mouth"},
+  {name:"Le Châteaubriand",      cat:"Bistro",      arr:11,price:"€€€",  lat:48.8648,lng:2.3841,local:true, michelin:0,meals:["dinner"],tags:["casual","fine-dining","drinks"],review:"1930s-inspired décor, dishes that come directly to the heart. Natural wine focus.",source:"World of Mouth"},
+  {name:"Astier",                cat:"Bistro",      arr:11,price:"€€",   lat:48.8636,lng:2.3764,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual","fine-dining"],review:"Old-school charm with playful French classics. The cheese cart alone is worth it.",source:"The Infatuation"},
+  {name:"Au Petit Panisse",      cat:"Bistro",      arr:11,price:"€€",   lat:48.8539,lng:2.3810,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual","drinks"],review:"Seasonal dishes and natural wine in a cozy neighbourhood setting in the 11th.",source:"The Infatuation"},
+  {name:"Géosmine",              cat:"Fine Dining", arr:11,price:"€€€€", lat:48.8648,lng:2.3760,local:true, michelin:1,meals:["dinner"],tags:["fine-dining","fine-dining","casual"],review:"Michelin star 2024. Herb and smoked eel tartelettes, Normandy sirloin with barbecue sauce.",source:"Roadbook"},
+  {name:"Jones",                 cat:"Fine Dining", arr:11,price:"€€€",  lat:48.8531,lng:2.3799,local:true, michelin:0,meals:["dinner"],tags:["casual","fine-dining","drinks"],review:"Suckling lamb with virgin olive oil and oranges. Scallops with citron and carrot mousseline.",source:"Roadbook"},
+  {name:"Chez Aline",            cat:"Casual",      arr:11,price:"€",    lat:48.8524,lng:2.3779,local:true, michelin:0,meals:["lunch","snack"],tags:["casual","cheap-eats"],review:"Takeout-focused, changing menu. Famous for the 'really fucking tasty' poulet pot au feu sandwich.",source:"World of Mouth"},
+
+  // 12th
+  {name:"Amarante",              cat:"Bistro",      arr:12,price:"€€€",  lat:48.8524,lng:2.3665,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual","fine-dining"],review:"Flies under the radar with notable pig's trotters and refined bistro cooking. Hidden gem.",source:"The Infatuation"},
+  {name:"Le Quincy",             cat:"Bistro",      arr:12,price:"€€",   lat:48.8511,lng:2.3732,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual"],review:"Feels like the French countryside despite being in Paris. Enormous portions.",source:"The Infatuation"},
+
+  // 14th
+  {name:"Le Duc",                cat:"Seafood",     arr:14,price:"€€€€", lat:48.8381,lng:2.3249,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual","fine-dining"],review:"Legendary fish restaurant since the late 1960s. Traditional preparation, pristine fish.",source:"World of Mouth"},
+  {name:"Le Severo",             cat:"Steakhouse",  arr:14,price:"€€€",  lat:48.8327,lng:2.3247,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual","fine-dining"],review:"Arguably Paris's best steak. Natural wine list. No-compromise quality from butcher-turned-chef.",source:"The Infatuation"},
+  {name:"Le Petit Sommelier",    cat:"Bistro",      arr:14,price:"€€",   lat:48.8318,lng:2.3297,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual","drinks"],review:"Bistro classics with contemporary touches. Curated wine selection, seasonal menu.",source:"World of Mouth"},
+
+  // 16th
+  {name:"Roy Chocolatier",       cat:"Sweets",      arr:16,price:"€€",   lat:48.8637,lng:2.2730,local:true, michelin:0,meals:["snack"],tags:["morning","casual"],review:"Fine artisan chocolatier in the 16th. Elegant single-origin and blended chocolates.",source:"Les Frenchies Travel"},
+  {name:"Carette",               cat:"Café",        arr:16,price:"€€",   lat:48.8632,lng:2.2877,local:false,michelin:0,meals:["breakfast","lunch","snack"],tags:["morning"],review:"Elegant tea salon near Trocadéro. Famous for hot chocolate, macarons, and cakes.",source:"Les Frenchies Travel"},
+  {name:"Daroco 16",             cat:"Italian",     arr:16,price:"€€€",  lat:48.8645,lng:2.2745,local:true, michelin:0,meals:["lunch","dinner"],tags:["fine-dining","casual"],review:"Italian excellence in the 16th. Sophisticated space, quality ingredients.",source:"Les Frenchies Travel"},
+  {name:"Le Paris 16",           cat:"Bistro",      arr:16,price:"€€€",  lat:48.8648,lng:2.2758,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual","fine-dining"],review:"Classic French bistro in the upscale 16th. Reliable, polished, beautiful terrace.",source:"Les Frenchies Travel"},
+  {name:"Monsieur Bleu",         cat:"Brasserie",   arr:16,price:"€€€",  lat:48.8638,lng:2.2921,local:false,michelin:0,meals:["lunch","dinner"],tags:["fine-dining"],review:"Art-deco interiors with stunning Eiffel Tower views. Soaring ceilings, fashion crowd.",source:"Urbansider"},
+
+  // 18th
+  {name:"Boulangerie Alexine",   cat:"Bakery",      arr:18,price:"€",    lat:48.8875,lng:2.3435,local:true, michelin:0,meals:["breakfast","snack"],tags:["morning","cheap-eats","casual"],review:"Local Montmartre gem for bread and pastries. Beloved neighbourhood institution.",source:"Les Frenchies Travel"},
+  {name:"The Beans on Fire",     cat:"Coffee",      arr:18,price:"€",    lat:48.8883,lng:2.3401,local:true, michelin:0,meals:["breakfast","snack"],tags:["morning","cheap-eats","casual"],review:"Excellent specialty coffee in Montmartre. Warm, independent, quality beans.",source:"Les Frenchies Travel"},
+  {name:"ACA Pigalle",           cat:"International",arr:18,price:"€€",  lat:48.8843,lng:2.3380,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual"],review:"Mexican restaurant near Pigalle. Mezcal cocktails and quality tacos.",source:"Les Frenchies Travel"},
+  {name:"Pink Mamma",            cat:"Italian",     arr:18,price:"€€€",  lat:48.8830,lng:2.3395,local:false,michelin:0,meals:["lunch","dinner"],tags:["fine-dining"],review:"Instagram-famous Big Mamma flagship. Italian food amongst Parisian rooftops. Stunning décor.",source:"Urbansider"},
+
+  // 19th
+  {name:"Le Cadoret",            cat:"Bistro",      arr:19,price:"€€",   lat:48.8731,lng:2.3839,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual"],review:"Unmissable Belleville bistro. Brilliant seasonal cooking in an unpretentious setting.",source:"The Infatuation"},
+  {name:"Simonetta",             cat:"Italian",     arr:19,price:"€€",   lat:48.8788,lng:2.3781,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual"],review:"Italian cuisine along the canal in the Buttes Chaumont neighbourhood.",source:"Urbansider"},
+
+  // 20th
+  {name:"Le Baratin",            cat:"Bistro",      arr:20,price:"€€€",  lat:48.8636,lng:2.3918,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual","fine-dining","drinks"],review:"One of Paris's best-loved spots. Proper bistro cuisine, seasonal cooking, natural wines.",source:"World of Mouth"},
+  {name:"Le Grand Bain",         cat:"Fine Dining", arr:20,price:"€€€",  lat:48.8699,lng:2.3901,local:true, michelin:0,meals:["dinner"],tags:["casual","fine-dining"],review:"Langoustines in foie gras sauce, salt-crusted pork ribs with Camembert. Creative.",source:"Roadbook"},
+
+  // ── NEW: from Les Frenchies Travel YouTube research ──────────────────────────
+
+  // 1st
+  {name:"Le Grand Véfour",         cat:"Fine Dining", arr:1, price:"€€€€", lat:48.8648,lng:2.3374,local:false,michelin:2,meals:["lunch","dinner"],tags:["fine-dining"],review:"Legendary 18th-century restaurant beneath the Palais Royal arcades. Gilded mirrors, rich classical French cuisine, historic atmosphere.",source:"Les Frenchies Travel"},
+  {name:"Le Soufflé",              cat:"Bistro",      arr:1, price:"€€€",  lat:48.8639,lng:2.3291,local:true, michelin:0,meals:["lunch","dinner"],tags:["fine-dining","casual"],review:"Paris's temple of the soufflé near Tuileries. Both savory and sweet versions done to perfection.",source:"Les Frenchies Travel"},
+  {name:"L'Escargot de Montorgueil",cat:"Bistro",     arr:1, price:"€€",   lat:48.8636,lng:2.3471,local:false,michelin:0,meals:["lunch","dinner"],tags:["casual"],review:"Classic escargot and frog legs restaurant in a charming historic setting near Rue Montorgueil. Worth the detour.",source:"Les Frenchies Travel"},
+  {name:"Louise Café",             cat:"Café",        arr:1, price:"€€",   lat:48.8624,lng:2.3388,local:true, michelin:0,meals:["breakfast","lunch"],tags:["morning","casual"],review:"Cozy café near the Louvre with a relaxed breakfast and lunch menu. A calm refuge from the tourist crowds.",source:"Les Frenchies Travel"},
+  {name:"Claus",                   cat:"Café",        arr:1, price:"€€",   lat:48.8623,lng:2.3475,local:false,michelin:0,meals:["breakfast","lunch"],tags:["morning"],review:"Refined breakfast café near the Louvre blending French and international morning options. Excellent quality.",source:"Les Frenchies Travel"},
+
+  // 2nd
+  {name:"Le Grand Colbert",        cat:"Brasserie",   arr:2, price:"€€€",  lat:48.8643,lng:2.3389,local:false,michelin:0,meals:["lunch","dinner"],tags:["fine-dining"],review:"Belle Époque brasserie near Palais Royal. Starred in 'Something's Gotta Give.' Zinc bar, carved wood, classic French menu.",source:"Les Frenchies Travel"},
+  {name:"Brasserie Dubillot",      cat:"Brasserie",   arr:2, price:"€€",   lat:48.8657,lng:2.3495,local:true, michelin:0,meals:["breakfast","lunch","dinner"],tags:["casual"],review:"Lively neighbourhood brasserie near Les Halles with a classic menu and a great terrace. Local favourite.",source:"Les Frenchies Travel"},
+  {name:"La Bourse et la Vie",     cat:"Bistro",      arr:2, price:"€€€",  lat:48.8654,lng:2.3393,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual","fine-dining"],review:"Daniel Rose's acclaimed Franco-American bistro near the Bourse. Perfect steak frites and impeccable classics.",source:"Les Frenchies Travel"},
+
+  // 3rd
+  {name:"Chez Janou",              cat:"Bistro",      arr:3, price:"€€",   lat:48.8594,lng:2.3645,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual","drinks"],review:"Provençal cooking in a warm, perpetually packed Marais dining room. Legendary chocolate mousse served in a giant bowl.",source:"Les Frenchies Travel"},
+  {name:"Café des Musées",         cat:"Bistro",      arr:3, price:"€€",   lat:48.8596,lng:2.3624,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual"],review:"Traditional bistro near Musée Picasso. Hearty classics, reasonable prices, authentic neighbourhood atmosphere.",source:"Les Frenchies Travel"},
+  {name:"Breizh Café",             cat:"Crêperie",    arr:3, price:"€€",   lat:48.8597,lng:2.3592,local:true, michelin:0,meals:["breakfast","lunch","snack"],tags:["casual"],review:"Arguably Paris's finest crêperie. Buckwheat galettes with premium Breton ingredients. Queue expected but worth it.",source:"Les Frenchies Travel"},
+  {name:"Chez Jeanphi",            cat:"International",arr:3,price:"€",    lat:48.8622,lng:2.3627,local:true, michelin:0,meals:["lunch","snack"],tags:["casual","cheap-eats"],review:"Stall inside Marché des Enfants Rouges — Paris's oldest covered market (1615). Diverse world cuisines in a lively setting.",source:"Les Frenchies Travel"},
+  {name:"Bouillon République",     cat:"Brasserie",   arr:3, price:"€",    lat:48.8642,lng:2.3648,local:false,michelin:0,meals:["lunch","dinner"],tags:["cheap-eats"],review:"Modern bouillon near Place de la République. Stunning Belle Époque setting, classic French dishes at bargain prices.",source:"Les Frenchies Travel"},
+  {name:"Fragments",               cat:"Café",        arr:3, price:"€€",   lat:48.8547,lng:2.3619,local:true, michelin:0,meals:["breakfast","lunch"],tags:["morning","casual"],review:"Intimate coffee spot near Place des Vosges. Avocado toast with poached eggs, fresh cinnamon buns, quality espresso.",source:"Les Frenchies Travel"},
+  {name:"Babka Zana",              cat:"Bakery",      arr:3, price:"€",    lat:48.8554,lng:2.3628,local:true, michelin:0,meals:["breakfast","snack"],tags:["morning","cheap-eats","casual"],review:"Jewish-Mediterranean bakery with pistachio babka and za'atar focaccia. Cult following in the Marais.",source:"Les Frenchies Travel"},
+
+  // 4th
+  {name:"Au Bourguignon du Marais",cat:"Wine Bar",    arr:4, price:"€€€",  lat:48.8551,lng:2.3548,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual","fine-dining","drinks"],review:"Burgundy-focused wine bar and bistro in the Marais. Excellent bœuf bourguignon, great natural wine selection.",source:"Les Frenchies Travel"},
+  {name:"Saint Regis",             cat:"Café",        arr:4, price:"€€",   lat:48.8519,lng:2.3560,local:true, michelin:0,meals:["breakfast","lunch","snack"],tags:["morning","casual"],review:"Charming retro café on Île Saint-Louis. Art Deco interior, perfect for coffee, croque-monsieur, or an afternoon wine.",source:"Les Frenchies Travel"},
+  {name:"Camille",                 cat:"Bistro",      arr:4, price:"€€",   lat:48.8559,lng:2.3583,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual"],review:"Classic French bistro in the heart of the Marais. Welcoming terrace, generous portions, good wine list.",source:"Les Frenchies Travel"},
+  {name:"L'Ambroisie",             cat:"Fine Dining", arr:4, price:"€€€€", lat:48.8548,lng:2.3641,local:true, michelin:3,meals:["lunch","dinner"],tags:["fine-dining"],review:"Three Michelin stars on Place des Vosges. Bernard Pacaud's temple of classical French cuisine. Book months in advance.",source:"Les Frenchies Travel"},
+  {name:"L'As du Fallafel",        cat:"Casual",      arr:4, price:"€",    lat:48.8574,lng:2.3562,local:true, michelin:0,meals:["lunch","snack"],tags:["cheap-eats","casual"],review:"Paris's most famous falafel on Rue des Rosiers. Crispy, overstuffed, legendary. Queue moves fast.",source:"Les Frenchies Travel"},
+  {name:"Sacha Finkelsztajn",      cat:"Bakery",      arr:4, price:"€",    lat:48.8576,lng:2.3561,local:true, michelin:0,meals:["breakfast","lunch","snack"],tags:["morning","cheap-eats","casual"],review:"Historic Jewish-Ashkenazi bakery on Rue des Rosiers since 1946. Famous pastrami sandwiches and Eastern European pastries.",source:"Les Frenchies Travel"},
+
+  // 5th
+  {name:"Chez René",               cat:"Bistro",      arr:5, price:"€€",   lat:48.8513,lng:2.3545,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual","fine-dining"],review:"A true Parisian institution since 1957. Classics like coq au vin and bœuf bourguignon in an utterly timeless setting.",source:"Les Frenchies Travel"},
+  {name:"Le Petit Pontoise",       cat:"Bistro",      arr:5, price:"€€",   lat:48.8509,lng:2.3541,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual"],review:"Cozy Latin Quarter bistro near the Seine. Honest French cooking, good value, warm and charming interior.",source:"Les Frenchies Travel"},
+  {name:"La Tour d'Argent",        cat:"Fine Dining", arr:5, price:"€€€€", lat:48.8513,lng:2.3517,local:false,michelin:1,meals:["lunch","dinner"],tags:["fine-dining"],review:"Legendary since 1582. Iconic canard pressé (pressed duck) with numbered certificate. Breathtaking views over Notre-Dame.",source:"Les Frenchies Travel"},
+
+  // 6th
+  {name:"Brasserie Lipp",          cat:"Brasserie",   arr:6, price:"€€€",  lat:48.8541,lng:2.3329,local:false,michelin:0,meals:["lunch","dinner"],tags:["fine-dining"],review:"Saint-Germain institution since 1880. Choucroute garnie, herring, bavarian cream. Politicians and intellectuals dine here.",source:"Les Frenchies Travel"},
+  {name:"Les Deux Magots",         cat:"Café",        arr:6, price:"€€€",  lat:48.8537,lng:2.3334,local:false,michelin:0,meals:["breakfast","lunch"],tags:["morning"],review:"Legendary literary café on Place Saint-Germain-des-Prés. Sartre, Hemingway, Picasso all drank here. An essential Paris experience.",source:"Les Frenchies Travel"},
+  {name:"Chez Fernand Christine",  cat:"Bistro",      arr:6, price:"€€€",  lat:48.8537,lng:2.3412,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual","fine-dining"],review:"Classic Saint-Germain bistro on a quiet street. Generous bœuf bourguignon, traditional starters, warm atmosphere.",source:"Les Frenchies Travel"},
+  {name:"Les Éditeurs",            cat:"Café",        arr:6, price:"€€",   lat:48.8530,lng:2.3390,local:true, michelin:0,meals:["breakfast","lunch","dinner"],tags:["morning","casual"],review:"Charming literary café with book-lined walls near Odéon. Quiche with Saint-Marcellin cheese, good wines, cozy all day.",source:"Les Frenchies Travel"},
+  {name:"Brasserie des Prés",      cat:"Brasserie",   arr:6, price:"€€€",  lat:48.8546,lng:2.3307,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual","fine-dining"],review:"Cobblestone-street gem in Saint-Germain. Outstanding skirt steak with béarnaise and classic œuf mayonnaise.",source:"Les Frenchies Travel"},
+  {name:"La Vagenade",             cat:"Bistro",      arr:6, price:"€€",   lat:48.8497,lng:2.3283,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual"],review:"Unpretentious classic bistro near Vavin. Hearty French cooking, good wine, the kind of neighbourhood spot locals treasure.",source:"Les Frenchies Travel"},
+  {name:"Colvert",                 cat:"Bistro",      arr:6, price:"€€€",  lat:48.8523,lng:2.3324,local:true, michelin:0,meals:["dinner"],tags:["fine-dining","casual"],review:"Contemporary Saint-Germain bistro by a Michelin-trained chef. Creative French cuisine with seasonal produce.",source:"Les Frenchies Travel"},
+  {name:"Guy Savoy",               cat:"Fine Dining", arr:6, price:"€€€€", lat:48.8567,lng:2.3393,local:false,michelin:3,meals:["lunch","dinner"],tags:["fine-dining"],review:"Three Michelin stars at the Monnaie de Paris. Guy Savoy's flagship — legendary artichoke soup with black truffle.",source:"Les Frenchies Travel"},
+  {name:"Le Jardin Saint-Germain", cat:"Bistro",      arr:6, price:"€€€",  lat:48.8520,lng:2.3295,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual","fine-dining"],review:"Elegant yet relaxed Saint-Germain bistro. Refined filet de bar, outstanding pain perdu, seasonal French cuisine done with care.",source:"Les Frenchies Travel"},
+  {name:"La Grande Crèmerie",      cat:"Wine Bar",    arr:6, price:"€€",   lat:48.8512,lng:2.3394,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual","drinks"],review:"Natural wine cave and charcuterie bar in Saint-Germain. Excellent board pairings, intimate low-lit setting.",source:"Les Frenchies Travel"},
+
+  // 7th
+  {name:"Fontaine de Mars",        cat:"Bistro",      arr:7, price:"€€",   lat:48.8560,lng:2.3027,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual"],review:"Classic bistro near the Eiffel Tower — Obama ate here in 2009. Cassoulet, duck confit, excellent terrace on the cobblestones.",source:"Les Frenchies Travel"},
+  {name:"Les Cocottes",            cat:"Bistro",      arr:7, price:"€€",   lat:48.8559,lng:2.3020,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual"],review:"Christian Constant's casual concept — French classics served in cast-iron cocottes. No reservations, counter seating, great value.",source:"Les Frenchies Travel"},
+  {name:"Le Jules Verne",          cat:"Fine Dining", arr:7, price:"€€€€", lat:48.8582,lng:2.2942,local:false,michelin:1,meals:["lunch","dinner"],tags:["fine-dining"],review:"Michelin-starred on the 2nd floor of the Eiffel Tower. Frédéric Anton's refined cuisine with the most dramatic views in Paris.",source:"Les Frenchies Travel"},
+  {name:"L'Atelier de Joël Robuchon",cat:"Fine Dining",arr:7,price:"€€€€",lat:48.8554,lng:2.3246,local:false,michelin:2,meals:["lunch","dinner"],tags:["fine-dining"],review:"Robuchon's iconic counter-dining concept near Musée d'Orsay. Open kitchen, legendary pomme purée, seasonal seasonal tasting menu.",source:"Les Frenchies Travel"},
+
+  // 9th
+  {name:"Bellanger Brasserie",     cat:"Brasserie",   arr:9, price:"€€",   lat:48.8793,lng:2.3406,local:true, michelin:0,meals:["breakfast","lunch","dinner"],tags:["casual"],review:"Buzzy neo-brasserie near Pigalle. Brunch, oysters, steak tartare — solid quality with a modern edge.",source:"Les Frenchies Travel"},
+
+  // 10th
+  {name:"Holybelly 5",             cat:"Café",        arr:10,price:"€€",   lat:48.8718,lng:2.3614,local:true, michelin:0,meals:["breakfast","lunch"],tags:["morning","casual"],review:"Paris's most beloved brunch café — Australian coffee culture meets French ingredients. Savory pancakes, natural wines, excellent espresso.",source:"Les Frenchies Travel"},
+  {name:"Du Pain et des Idées",    cat:"Bakery",      arr:10,price:"€",    lat:48.8714,lng:2.3619,local:true, michelin:0,meals:["breakfast","snack"],tags:["morning","cheap-eats","casual"],review:"One of Paris's greatest boulangeries in a stunning Belle Époque interior. Pistachio-chocolate escargots and extraordinary loaves.",source:"Les Frenchies Travel"},
+  {name:"La Fontaine de Belleville",cat:"Café",       arr:10,price:"€",    lat:48.8737,lng:2.3671,local:true, michelin:0,meals:["breakfast","lunch","snack"],tags:["morning","cheap-eats","casual"],review:"Classic Parisian café with timeless old-school charm. Perfect café crème, tartines, soft-boiled eggs. A true neighbourhood gem.",source:"Les Frenchies Travel"},
+  {name:"Bouillon Chartier Est",   cat:"Brasserie",   arr:10,price:"€",    lat:48.8761,lng:2.3590,local:false,michelin:0,meals:["lunch","dinner"],tags:["cheap-eats"],review:"Third Bouillon Chartier location near Gare de l'Est. Same legendary Belle Époque grandeur and ultra-affordable French classics.",source:"Les Frenchies Travel"},
+
+  // 11th
+  {name:"L'Aller Retour",          cat:"Wine Bar",    arr:11,price:"€€",   lat:48.8672,lng:2.3749,local:true, michelin:0,meals:["dinner"],tags:["casual","drinks"],review:"Convivial wine bar near République. Natural wines, charcuterie, seasonal small plates in a lively neighbourhood setting.",source:"Les Frenchies Travel"},
+  {name:"Café Méricourt",          cat:"Café",        arr:11,price:"€€",   lat:48.8636,lng:2.3763,local:true, michelin:0,meals:["breakfast","lunch"],tags:["morning","casual"],review:"Airy specialty coffee shop with a seasonal, vegetable-forward menu. Green shakshuka, house granola, quality espresso.",source:"Les Frenchies Travel"},
+  {name:"Café Paul Bert",          cat:"Wine Bar",    arr:11,price:"€€",   lat:48.8526,lng:2.3856,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual","drinks"],review:"Natural wine bar and bistro on Rue Paul Bert near Bastille. Excellent charcuterie, rotating seasonal menu, convivial atmosphere.",source:"Les Frenchies Travel"},
+
+  // 12th
+  {name:"Le Train Bleu",           cat:"Brasserie",   arr:12,price:"€€€",  lat:48.8447,lng:2.3735,local:false,michelin:0,meals:["breakfast","lunch","dinner"],tags:["fine-dining"],review:"Stunning Belle Époque brasserie inside Gare de Lyon (1900). Gilded ceilings, oil paintings, classified historic monument.",source:"Les Frenchies Travel"},
+
+  // 14th
+  {name:"La Coupole",              cat:"Brasserie",   arr:14,price:"€€€",  lat:48.8430,lng:2.3268,local:false,michelin:0,meals:["breakfast","lunch","dinner"],tags:["fine-dining"],review:"Montparnasse landmark since 1927. Art Deco murals, 33 painted columns, legendary seafood platters and lamb curry.",source:"Les Frenchies Travel"},
+  {name:"Le Dôme",                 cat:"Seafood",     arr:14,price:"€€€€", lat:48.8436,lng:2.3241,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual","fine-dining"],review:"Legendary Montparnasse seafood brasserie since 1898. Pristine fish, exceptional bouillabaisse, impeccable old-school service.",source:"Les Frenchies Travel"},
+
+  // 15th
+  {name:"Ciel de Paris",           cat:"Fine Dining", arr:15,price:"€€€€", lat:48.8422,lng:2.3217,local:false,michelin:0,meals:["lunch","dinner"],tags:["fine-dining"],review:"Restaurant on the 56th floor of Tour Montparnasse. Stunning 360° views over Paris. Contemporary French cuisine for a special occasion.",source:"Les Frenchies Travel"},
+
+  // 17th
+  {name:"Brutus Crêperie",         cat:"Crêperie",    arr:17,price:"€",    lat:48.8808,lng:2.3073,local:true, michelin:0,meals:["breakfast","lunch","snack"],tags:["cheap-eats","casual"],review:"Artisan crêperie near Parc Monceau. Quality Breton buckwheat galettes and sweet crêpes in a cozy neighbourhood setting.",source:"Les Frenchies Travel"},
+
+  // 18th
+  {name:"La Boîte aux Lettres",    cat:"Bistro",      arr:18,price:"€€",   lat:48.8852,lng:2.3381,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual","fine-dining"],review:"Charming Montmartre bistro loved by locals. Seasonal menu, excellent wine list, warm neighbourhood atmosphere.",source:"Les Frenchies Travel"},
+  {name:"Bouillon Pigalle",        cat:"Brasserie",   arr:18,price:"€",    lat:48.8838,lng:2.3350,local:false,michelin:0,meals:["lunch","dinner"],tags:["cheap-eats"],review:"Paris's newest bouillon at the foot of Montmartre. Belle Époque setting, ultra-affordable French classics, always packed.",source:"Les Frenchies Travel"},
+  {name:"Le Coq & Fils",           cat:"Bistro",      arr:18,price:"€€",   lat:48.8873,lng:2.3358,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual"],review:"Montmartre bistro specialising in creative chicken dishes. Seasonal menu, cozy atmosphere, true neighbourhood gem.",source:"Les Frenchies Travel"},
+  {name:"Le Refuge des Fondus",    cat:"Bistro",      arr:18,price:"€",    lat:48.8849,lng:2.3386,local:true, michelin:0,meals:["dinner"],tags:["casual","cheap-eats"],review:"Quirky Montmartre fondue tradition: wine served in baby bottles! Cash only, communal tables, packed with locals and visitors alike.",source:"Les Frenchies Travel"},
+  {name:"Ose",                     cat:"Bistro",      arr:18,price:"€€",   lat:48.8879,lng:2.3432,local:true, michelin:0,meals:["lunch","dinner"],tags:["casual","fine-dining"],review:"Modern bistro in upper Montmartre near Sacré-Cœur. Creative seasonal dishes, natural wines, well off the tourist track.",source:"Les Frenchies Travel"},
+];
+
+// ─── FAVOURITES ───────────────────────────────────────────────────────────────
+let favs=JSON.parse(localStorage.getItem('parisFavs')||'[]');
+function saveFavs(){localStorage.setItem('parisFavs',JSON.stringify(favs));}
+function isFav(name){return favs.includes(name);}
+function toggleFav(name){
+  if(isFav(name))favs=favs.filter(n=>n!==name);
+  else favs.push(name);
+  saveFavs();updateFavUI();
+}
+function updateFavUI(){
+  const c=favs.length;
+  document.getElementById('fav-count-badge').textContent=c;
+  document.getElementById('fav-count-badge').classList.toggle('show',c>0);
+  document.getElementById('mbar-fav-badge').textContent=c;
+  document.getElementById('mbar-fav-badge').classList.toggle('show',c>0);
+  renderFavList();
+}
+function renderFavList(){
+  const list=document.getElementById('fav-list');
+  if(!favs.length){list.innerHTML='<div id="fav-empty">No saved places yet.<br>Tap ♥ on any place to save it.</div>';return;}
+  list.innerHTML=favs.map(name=>{
+    const p=places.find(x=>x.name===name);if(!p)return'';
+    const g=getGroupInfo(p.cat);
+    return`<div class="fav-item">
+      <div class="fav-dot" style="background:${g.color}"></div>
+      <div class="fav-info"><div class="fav-name">${p.name}</div><div class="fav-sub">${g.key} · ${p.arr}${ord(p.arr)} arr. · ${p.price}</div></div>
+      <button class="fav-remove" onclick="toggleFav('${p.name.replace(/'/g,"\\'")}')">✕</button>
+    </div>`;
+  }).join('');
+}
+
+// ─── MAP ──────────────────────────────────────────────────────────────────────
+const map=L.map('map',{center:[48.8566,2.3522],zoom:13,zoomControl:false});
+L.control.zoom({position:'bottomright'}).addTo(map);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{attribution:'&copy; <a href="https://carto.com/">CARTO</a>',maxZoom:19}).addTo(map);
+const cluster=L.markerClusterGroup({
+  maxClusterRadius:30,
+  iconCreateFunction:function(c){
+    const n=c.getChildCount();
+    const sz=n<10?32:n<50?38:44;
+    return L.divIcon({
+      className:'',
+      html:`<div style="width:${sz}px;height:${sz}px;border-radius:50%;background:rgba(139,94,60,.88);border:2.5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.28);display:flex;align-items:center;justify-content:center;color:#fff;font-family:'Inter',sans-serif;font-size:${n<10?13:11}px;font-weight:700;">${n}</div>`,
+      iconSize:[sz,sz],iconAnchor:[sz/2,sz/2]
+    });
+  }
+});
+map.addLayer(cluster);
+map.on('moveend',renderListPanel);
+map.on('click',()=>map.closePopup());
+
+function ord(n){return n===1?'st':n===2?'nd':n===3?'rd':'th';}
+
+function makeIcon(p){
+  const g=getGroupInfo(p.cat);
+  const sz=p.local?14:10;
+  const shadow=p.local?`box-shadow:0 0 0 2px ${g.color}40,0 1px 4px rgba(0,0,0,.25);`:`box-shadow:0 1px 4px rgba(0,0,0,.22);`;
+  return L.divIcon({
+    className:'',
+    html:`<div style="width:${sz}px;height:${sz}px;border-radius:50%;background:${g.color};border:2px solid #fff;${shadow}"></div>`,
+    iconSize:[sz,sz],iconAnchor:[sz/2,sz/2],popupAnchor:[0,-sz/2-2]
+  });
+}
+
+function makePopup(p){
+  const g=getGroupInfo(p.cat);
+  const localBadge=p.local?`<span class="badge-local">🏠 Local's Favourite</span>`:'';
+  const michelinBadge=p.michelin?`<span class="badge-michelin">${'★'.repeat(p.michelin)} Michelin</span>`:'';
+  const saved=isFav(p.name);
+  const mapsUrl=`https://www.google.com/maps/search/${encodeURIComponent(p.name+' Paris')}`;
+  const web=WEBSITES[p.name];
+  const photos=getPhotos(p);
+  const strip=`<div class="photo-strip">${photos.map(u=>`<img src="${u}" loading="lazy" onerror="this.onerror=null;this.removeAttribute('src')">`).join('')}</div>`;
+  const webBtn=web?`<a class="pact-btn" href="${web}" target="_blank">🌐 Website</a>`:'';
+  const ytBtn=p.source==='Les Frenchies Travel'?`<a class="pact-btn" href="https://www.youtube.com/@LesFrenchiesTravel/playlists" target="_blank" rel="noopener">▶ Les Frenchies Channel</a>`:'';
+  const sn=p.name.replace(/'/g,"\\'");
+  return`<div class="pw">
+    ${strip}
+    <div class="pn">${p.name}</div>
+    ${(localBadge||michelinBadge)?`<div class="pbadges">${localBadge}${michelinBadge}</div>`:''}
+    <div class="pmeta">
+      <span class="badge-cat" style="background:${g.color}">${g.key}</span>
+      <span class="pprice">${p.price}</span>
+      <span class="parr">${p.arr}${ord(p.arr)} arr.</span>
+    </div>
+    <div class="pdiv"></div>
+    <div class="prev">${p.review}</div>
+    <div class="pactions">
+      <a class="pact-btn" href="${mapsUrl}" target="_blank">📍 Directions</a>
+      ${webBtn}
+      ${ytBtn}
+      <button class="pact-btn ${saved?'saved':''}" onclick="toggleFav('${sn}');this.className='pact-btn '+(isFav('${sn}')?'saved':'');this.textContent=isFav('${sn}')?'♥ Saved':'♡ Save';">${saved?'♥ Saved':'♡ Save'}</button>
+    </div>
+    <div class="psource">${p.source}</div>
+  </div>`;
+}
+
+const markers=places.map(p=>{
+  const m=L.marker([p.lat,p.lng],{icon:makeIcon(p)});
+  m.bindPopup(()=>makePopup(p),{maxWidth:310});
+  // Hover tooltip
+  const g=getGroupInfo(p.cat);
+  const photo=getPhotos(p)[0];
+  const web=WEBSITES[p.name];
+  const webLine=web?`<a class="tip-web" href="${web}" target="_blank">${web.replace(/^https?:\/\/(www\.)?/,'')}</a>`:'';
+  m.bindTooltip(
+    `<img class="tip-img" src="${photo}" loading="lazy" onerror="this.onerror=null;this.removeAttribute('src')">
+     <div class="tip-body">
+       <div class="tip-name">${p.name}</div>
+       <div class="tip-sub">${g.key} &nbsp;·&nbsp; ${p.price} &nbsp;·&nbsp; ${p.arr}${ord(p.arr)} arr.</div>
+       ${webLine}
+     </div>`,
+    {direction:'top',sticky:false,opacity:1,className:'photo-tip',offset:[0,-6]}
+  );
+  m._p=p;
+  return m;
+});
+
+// ─── STATE & FILTERS ──────────────────────────────────────────────────────────
+let activeArrs=new Set([...new Set(places.map(p=>p.arr))]);
+let activeMeals=new Set(["breakfast","lunch","dinner","snack"]);
+let activePrices=new Set(["€","€€","€€€","€€€€"]);
+let activeExp=-1;
+let localsOnly=false;
+let searchQ="";
+
+// ─── URL STATE (deep linking) ─────────────────────────────────────────────────
+function writeURLParams(){
+  if(location.protocol==='file:')return;
+  const p=new URLSearchParams();
+  if(searchQ)p.set('q',searchQ);
+  if(activeArrs.size<arrNums.length)p.set('arr',[...activeArrs].sort((a,b)=>a-b).join(','));
+  if(activePrices.size<4)p.set('price',[...activePrices].join(','));
+  if(activeMeals.size<4)p.set('meal',[...activeMeals].join(','));
+  if(activeExp>=0)p.set('exp',activeExp);
+  if(localsOnly)p.set('locals','1');
+  const str=p.toString();
+  history.replaceState(null,'',location.pathname+(str?'?'+str:''));
+}
+function readURLParams(){
+  if(location.protocol==='file:')return;
+  const p=new URLSearchParams(location.search);
+  const q=p.get('q');
+  if(q){searchQ=q;document.getElementById('search').value=q;}
+  const arr=p.get('arr');
+  if(arr){
+    activeArrs=new Set(arr.split(',').map(Number));
+    document.querySelectorAll('.arr-btn').forEach(btn=>btn.classList.toggle('on',activeArrs.has(+btn.dataset.arr)));
+  }
+  const price=p.get('price');
+  if(price){
+    activePrices=new Set(price.split(','));
+    document.querySelectorAll('.price-btn').forEach(btn=>btn.classList.toggle('on',activePrices.has(btn.dataset.price)));
+  }
+  const meal=p.get('meal');
+  if(meal){
+    activeMeals=new Set(meal.split(','));
+    document.querySelectorAll('.meal-btn').forEach(btn=>btn.classList.toggle('on',activeMeals.has(btn.dataset.meal)));
+  }
+  const exp=p.get('exp');
+  if(exp!==null){activeExp=parseInt(exp);expSlider.value=activeExp===-1?3:activeExp;syncExpLabel();}
+  if(p.get('locals')==='1'){localsOnly=true;document.getElementById('locals-filter').checked=true;}
+  const place=p.get('place');
+  if(place){
+    const mk=markers.find(m=>m._p.name===place);
+    if(mk){map.once('moveend',()=>{setTimeout(()=>mk.openPopup(),300);});map.flyTo([mk._p.lat,mk._p.lng],16,{duration:1});}
+  }
+}
+
+// ─── LIST PANEL ───────────────────────────────────────────────────────────────
+function isMobileMode(){return window.innerWidth<=700||document.body.classList.contains('force-mobile');}
+
+function renderListPanel(){
+  const lp=document.getElementById('list-panel');
+  if(isMobileMode()?!lp.classList.contains('mobile-open'):lp.classList.contains('collapsed'))return;
+  const cards=document.getElementById('list-cards');
+  const titleEl=document.getElementById('list-title');
+  const bounds=map.getBounds();
+  const visible=places.filter(p=>{
+    if(!searchQ&&!bounds.contains([p.lat,p.lng]))return false;
+    if(!activeArrs.has(p.arr))return false;
+    if(!activePrices.has(p.price))return false;
+    if(p.meals&&![...activeMeals].some(m=>p.meals.includes(m)))return false;
+    if(searchQ&&scorePlace(p,searchQ)===0)return false;
+    if(activeExp>=0&&getExperience(p)!==activeExp)return false;
+    if(localsOnly&&!(p.local&&(RATINGS[p.name]||0)>=4.5))return false;
+    return true;
+  });
+  if(searchQ){
+    visible.sort((a,b)=>scorePlace(b,searchQ)-scorePlace(a,searchQ)||(RATINGS[b.name]||0)-(RATINGS[a.name]||0));
+  } else {
+    visible.sort((a,b)=>(RATINGS[b.name]||0)-(RATINGS[a.name]||0));
+  }
+  titleEl.textContent=`${visible.length} place${visible.length!==1?'s':''}`;
+  cards.innerHTML=visible.map(p=>{
+    const rating=RATINGS[p.name];
+    const site=WEBSITES[p.name];
+    const grp=getGroupInfo(p.cat);
+    return`<div class="lc-card">
+      <div class="lc-body">
+        <div class="lc-top">
+          <div class="lc-name">${p.name}</div>
+          ${rating?`<div class="lc-stars">★ ${rating.toFixed(1)}</div>`:''}
+        </div>
+        <div class="lc-meta">${grp.key} · ${p.price} · ${p.arr}${ord(p.arr)} arr.</div>
+        <div class="lc-review">${p.review}</div>
+        <div class="lc-links">
+          ${site?`<a class="lc-link" href="${site}" target="_blank" rel="noopener">🌐 Website</a>`:''}
+          <a class="lc-link lc-maps" href="https://www.google.com/maps/search/${encodeURIComponent(p.name+' Paris')}" target="_blank" rel="noopener">📍 Maps</a>
+          ${p.source==='Les Frenchies Travel'?`<a class="lc-link" href="https://www.youtube.com/@LesFrenchiesTravel/playlists" target="_blank" rel="noopener">▶ Les Frenchies Channel</a>`:''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+document.getElementById('list-toggle').addEventListener('click',()=>{
+  const lp=document.getElementById('list-panel');
+  const layout=document.getElementById('layout');
+  const btn=document.getElementById('list-toggle');
+  const collapsed=lp.classList.toggle('collapsed');
+  layout.classList.toggle('list-collapsed',collapsed);
+  btn.textContent=collapsed?'‹':'›';
+  if(!collapsed)renderListPanel();
+  map.invalidateSize();
+});
+document.getElementById('list-close').addEventListener('click',()=>{
+  if(isMobileMode()){
+    document.getElementById('list-panel').classList.remove('mobile-open');
+    document.getElementById('mbar-list-btn').classList.remove('active');
+  } else {
+    document.getElementById('list-panel').classList.add('collapsed');
+    document.getElementById('layout').classList.add('list-collapsed');
+    document.getElementById('list-toggle').textContent='‹';
+    map.invalidateSize();
+  }
+});
+
+function applyFilters(){
+  cluster.clearLayers();
+  let n=0;
+  markers.forEach(m=>{
+    const p=m._p;
+    if(!activeArrs.has(p.arr))return;
+    if(!activePrices.has(p.price))return;
+    if(p.meals&&![...activeMeals].some(m=>p.meals.includes(m)))return;
+    if(searchQ&&scorePlace(p,searchQ)===0)return;
+    if(activeExp>=0&&getExperience(p)!==activeExp)return;
+    if(localsOnly&&!(p.local&&(RATINGS[p.name]||0)>=4.5))return;
+    cluster.addLayer(m);n++;
+  });
+  document.getElementById('count').textContent=n;
+  document.getElementById('mbar-count').textContent=n+' places';
+  renderListPanel();
+  writeURLParams();
+}
+
+// ─── EXPERIENCE SLIDER ────────────────────────────────────────────────────────
+function getExperience(p){
+  if(['Bakery','Coffee','Café','Sweets'].includes(p.cat))return 0;
+  if(p.cat==='Fine Dining'||p.michelin>0||p.price==='€€€€')return 2;
+  return 1;
+}
+const expSlider=document.getElementById('exp-slider');
+const expLabelEls=[document.getElementById('exp-l0'),document.getElementById('exp-l1'),document.getElementById('exp-l2'),document.getElementById('exp-l3')];
+function syncExpLabel(){
+  const sel=activeExp===-1?3:activeExp;
+  expLabelEls.forEach((el,i)=>el.classList.toggle('active',i===sel));
+}
+expSlider.addEventListener('input',()=>{
+  const v=parseInt(expSlider.value);
+  activeExp=v===3?-1:v;
+  syncExpLabel();
+  applyFilters();
+});
+
+// ─── ARR UI ───────────────────────────────────────────────────────────────────
+const ARR_CENTERS={
+  1:[48.8606,2.3472],2:[48.8658,2.3476],3:[48.8628,2.3610],4:[48.8547,2.3570],
+  5:[48.8475,2.3494],6:[48.8500,2.3295],7:[48.8571,2.3100],8:[48.8746,2.3110],
+  9:[48.8796,2.3378],10:[48.8745,2.3582],11:[48.8584,2.3802],12:[48.8481,2.3748],
+  14:[48.8344,2.3252],15:[48.8428,2.3050],17:[48.8847,2.3133],18:[48.8882,2.3418],
+  19:[48.8731,2.3839],20:[48.8636,2.3918],
+};
+
+const arrNums=[...new Set(places.map(p=>p.arr))].sort((a,b)=>a-b);
+const arrContainer=document.getElementById('arr-filters');
+arrNums.forEach(n=>{
+  const btn=document.createElement('button');
+  btn.className='arr-btn on';btn.dataset.arr=n;btn.textContent=n+ord(n);
+  btn.addEventListener('click',()=>{
+    if(activeArrs.has(n)){activeArrs.delete(n);btn.classList.remove('on');}
+    else{activeArrs.add(n);btn.classList.add('on');if(ARR_CENTERS[n])map.flyTo(ARR_CENTERS[n],15,{duration:0.8});}
+    applyFilters();
+  });
+  arrContainer.appendChild(btn);
+});
+
+// ─── MEAL UI ──────────────────────────────────────────────────────────────────
+document.querySelectorAll('.meal-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const m=btn.dataset.meal;
+    if(activeMeals.has(m)){activeMeals.delete(m);btn.classList.remove('on');}
+    else{activeMeals.add(m);btn.classList.add('on');}
+    applyFilters();
+  });
+});
+
+// ─── PRICE UI ─────────────────────────────────────────────────────────────────
+document.querySelectorAll('.price-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const p=btn.dataset.price;
+    if(activePrices.has(p)){activePrices.delete(p);btn.classList.remove('on');}
+    else{activePrices.add(p);btn.classList.add('on');}
+    applyFilters();
+  });
+});
+
+// ─── LOCALS FILTER ────────────────────────────────────────────────────────────
+document.getElementById('locals-filter').addEventListener('change',e=>{
+  localsOnly=e.target.checked;
+  applyFilters();
+});
+
+// ─── SEARCH ───────────────────────────────────────────────────────────────────
+document.getElementById('search').addEventListener('keydown',e=>{
+  if(e.key==='Enter'){searchQ=e.target.value.trim();applyFilters();}
+});
+document.getElementById('search').addEventListener('input',e=>{
+  if(!e.target.value){searchQ='';applyFilters();}
+});
+
+// ─── RESET ────────────────────────────────────────────────────────────────────
+document.getElementById('reset-btn').addEventListener('click',()=>{
+  activeArrs=new Set(arrNums);
+  activeMeals=new Set(["breakfast","lunch","dinner","snack"]);
+  document.querySelectorAll('.meal-btn').forEach(el=>el.classList.add('on'));
+  activePrices=new Set(["€","€€","€€€","€€€€"]);
+  activeExp=-1;expSlider.value=3;syncExpLabel();
+  localsOnly=false;document.getElementById('locals-filter').checked=false;
+  searchQ="";
+  document.getElementById('search').value="";
+  document.querySelectorAll('.arr-btn').forEach(el=>el.classList.add('on'));
+  document.querySelectorAll('.price-btn').forEach(el=>el.classList.add('on'));
+  applyFilters();
+});
+
+// ─── SIDEBAR TOGGLE ───────────────────────────────────────────────────────────
+document.getElementById('sidebar-toggle').addEventListener('click',()=>{
+  const sb=document.getElementById('sidebar');
+  const layout=document.getElementById('layout');
+  const btn=document.getElementById('sidebar-toggle');
+  const collapsed=sb.classList.toggle('collapsed');
+  layout.classList.toggle('sidebar-collapsed',collapsed);
+  btn.textContent=collapsed?'›':'‹';
+  map.invalidateSize();
+});
+
+// ─── FAVOURITES PANEL ─────────────────────────────────────────────────────────
+document.getElementById('fav-btn').addEventListener('click',()=>{document.getElementById('fav-panel').classList.toggle('open');renderFavList();});
+document.getElementById('fav-close').addEventListener('click',()=>{document.getElementById('fav-panel').classList.remove('open');hideOverlay();});
+document.getElementById('export-gmaps').addEventListener('click',()=>{
+  if(!favs.length)return;
+  const first=places.find(p=>p.name===favs[0]);
+  if(first)window.open(`https://www.google.com/maps/search/${encodeURIComponent(first.name+' Paris')}`,'_blank');
+});
+document.getElementById('export-copy').addEventListener('click',()=>{
+  if(!favs.length)return;
+  const txt=favs.map(name=>{const p=places.find(x=>x.name===name);return p?`${p.name} (${p.arr}${ord(p.arr)} arr.) — ${p.price}`:name;}).join('\n');
+  navigator.clipboard.writeText(txt).then(()=>{const btn=document.getElementById('export-copy');btn.textContent='✓ Copied!';setTimeout(()=>{btn.textContent='Copy list to clipboard';},2000);});
+});
+
+// ─── GEOLOCATION ─────────────────────────────────────────────────────────────
+let userMarker=null;
+document.getElementById('loc-btn').addEventListener('click',()=>{
+  const btn=document.getElementById('loc-btn');
+  btn.classList.add('locating');
+  navigator.geolocation.getCurrentPosition(pos=>{
+    btn.classList.remove('locating');
+    const{latitude:lat,longitude:lng}=pos.coords;
+    if(userMarker)map.removeLayer(userMarker);
+    userMarker=L.circleMarker([lat,lng],{radius:8,fillColor:'#3d5a7a',fillOpacity:1,color:'#fff',weight:2}).addTo(map).bindPopup('You are here').openPopup();
+    map.flyTo([lat,lng],15,{duration:1.2});
+  },()=>{btn.classList.remove('locating');alert('Location not available.');});
+});
+
+// ─── MOBILE PANEL HELPERS ─────────────────────────────────────────────────────
+function showOverlay(){document.getElementById('mobile-overlay').classList.add('show');}
+function hideOverlay(){document.getElementById('mobile-overlay').classList.remove('show');}
+function closeAllMobilePanels(){
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('list-panel').classList.remove('mobile-open');
+  document.getElementById('mbar-list-btn').classList.remove('active');
+  document.getElementById('fav-panel').classList.remove('open');
+  hideOverlay();
+}
+document.getElementById('mobile-overlay').addEventListener('click',closeAllMobilePanels);
+document.getElementById('sidebar-mob-close').addEventListener('click',()=>{
+  document.getElementById('sidebar').classList.remove('open');
+  hideOverlay();
+});
+
+// ─── MOBILE FILTER ────────────────────────────────────────────────────────────
+document.getElementById('mobile-filter-btn').addEventListener('click',()=>{
+  document.getElementById('sidebar').classList.toggle('open');
+});
+document.getElementById('mbar-filter-btn').addEventListener('click',()=>{
+  const opening=!document.getElementById('sidebar').classList.contains('open');
+  closeAllMobilePanels();
+  if(opening){document.getElementById('sidebar').classList.add('open');showOverlay();}
+});
+document.getElementById('mbar-list-btn').addEventListener('click',()=>{
+  const lp=document.getElementById('list-panel');
+  const btn=document.getElementById('mbar-list-btn');
+  const opening=!lp.classList.contains('mobile-open');
+  // Close overlay panels but keep list independent (no overlay — map stays visible)
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('fav-panel').classList.remove('open');
+  hideOverlay();
+  lp.classList.toggle('mobile-open',opening);
+  btn.classList.toggle('active',opening);
+  if(opening)renderListPanel();
+});
+document.getElementById('mbar-fav-btn').addEventListener('click',()=>{
+  const opening=!document.getElementById('fav-panel').classList.contains('open');
+  closeAllMobilePanels();
+  if(opening){document.getElementById('fav-panel').classList.add('open');showOverlay();renderFavList();}
+});
+
+// ─── VIEW TOGGLE ──────────────────────────────────────────────────────────────
+let forceMobile=false;
+document.getElementById('view-toggle').addEventListener('click',()=>{
+  forceMobile=!forceMobile;
+  document.body.classList.toggle('force-mobile',forceMobile);
+  const vt=document.getElementById('view-toggle');
+  vt.classList.toggle('active',forceMobile);
+  vt.textContent=forceMobile?'💻 Desktop view':'📱 Mobile view';
+  const sb=document.getElementById('sidebar');
+  const layout=document.getElementById('layout');
+  closeAllMobilePanels();
+  if(!forceMobile){
+    sb.classList.remove('collapsed');
+    layout.classList.remove('sidebar-collapsed');
+    document.getElementById('sidebar-toggle').textContent='‹';
+  }
+  map.invalidateSize();
+});
+
+// ─── DISCOVER ─────────────────────────────────────────────────────────────────
+const DISC_TERMS=[
+  // food & drinks
+  {t:["croissant","pastry","viennoiserie","baked","boulangerie","bakery","pain au chocolat","brioche"],cats:["Bakery & Pâtisserie"],score:5},
+  {t:["steak","entrecôte","beef","frites","steak frites"],cats:["Steakhouse","Bistro & Brasserie"],score:5},
+  {t:["pizza","italian","pasta","carbonara","tiramisu"],cats:["Italian & Pizza"],score:5},
+  {t:["seafood","oyster","fish","lobster","fruits de mer","crab","shrimp","prawn"],cats:["Seafood"],score:5},
+  {t:["wine","natural wine","cave","bar à vins","wine bar","glass of wine"],cats:["Wine & Bar"],score:5},
+  {t:["coffee","espresso","café","latte","flat white","cappuccino"],cats:["Café & Coffee"],score:5},
+  {t:["chocolate","praline","bonbon","cocoa"],cats:["Market & Specialty","Bakery & Pâtisserie"],score:5},
+  {t:["ice cream","gelato","sorbet","glace","frozen"],cats:["Bakery & Pâtisserie","Casual & Street Food"],score:4},
+  {t:["crêpe","crepe","galette","bretonne"],cats:["Casual & Street Food"],score:5},
+  {t:["falafel","shawarma","kebab","middle eastern","lebanese","hummus"],cats:["International","Casual & Street Food"],score:5},
+  {t:["escargot","snail","frog","grenouille"],cats:["Bistro & Brasserie","Fine Dining"],score:5},
+  {t:["fondue","raclette","savoyard","alpine","cheese"],cats:["Casual & Street Food","International"],score:5},
+  {t:["burger","sandwich","wrap","street food","fast casual"],cats:["Casual & Street Food"],score:5},
+  {t:["brunch","eggs","avocado toast","weekend brunch"],meals:["breakfast"],score:4},
+  {t:["sushi","japanese","ramen","asian","vietnamese","thai","chinese","noodle"],cats:["International"],score:5},
+  {t:["macaron","eclair","tart","dessert","pâtisserie","sweet","cake"],cats:["Bakery & Pâtisserie"],score:5},
+  {t:["oyster","plateau","fruits de mer"],cats:["Seafood"],score:6},
+  {t:["bouillon","classic french","traditional","brasserie"],cats:["Bistro & Brasserie"],score:4},
+  // vibes
+  {t:["cheap","budget","affordable","inexpensive","cheap eats","student"],price:["€","€€"],score:4},
+  {t:["splurge","special occasion","fancy","luxe","luxury","treat","upscale","high-end"],price:["€€€","€€€€"],score:4},
+  {t:["michelin","starred","michelin star","gastronomic","gourmet"],michelin:true,score:6},
+  {t:["quick","fast","grab","takeaway","to go","on the go","snack"],exp:[0],score:4},
+  {t:["romantic","date night","cozy","intimate","special","anniversary","candle"],cats:["Fine Dining","Bistro & Brasserie","Wine & Bar"],price:["€€€","€€€€"],score:4},
+  {t:["local","locals","hidden gem","authentic","off the beaten","neighbourhood","neighborhood"],local:true,score:5},
+  {t:["breakfast","morning","pastry breakfast","early"],meals:["breakfast"],score:5},
+  {t:["lunch","midday","midi"],meals:["lunch"],score:4},
+  {t:["dinner","evening","night out","dine out","supper"],meals:["dinner"],score:4},
+  // neighbourhoods (arr mapping)
+  {t:["marais","le marais","the marais"],arrs:[3,4],score:5},
+  {t:["montmartre","sacré coeur","sacre coeur"],arrs:[18],score:5},
+  {t:["latin quarter","quartier latin","sorbonne","saint michel"],arrs:[5,6],score:5},
+  {t:["saint germain","st germain","rive gauche","left bank"],arrs:[6,7],score:5},
+  {t:["eiffel","trocadero","tour eiffel","7th"],arrs:[7],score:4},
+  {t:["opéra","opera","grands boulevards","9th"],arrs:[9],score:4},
+  {t:["bastille","11th","oberkampf","faubourg saint antoine"],arrs:[11],score:4},
+  {t:["belleville","20th","canal","10th"],arrs:[10,20],score:4},
+  {t:["pigalle","south pigalle","sopigalle","18th"],arrs:[18,9],score:4},
+  {t:["louvre","palais royal","1st","les halles"],arrs:[1,2],score:4},
+  {t:["île saint-louis","ile saint-louis","île de la cité","4th"],arrs:[4],score:4},
+  {t:["right bank","rive droite"],arrs:[1,2,3,4,8,9,10,11,12,17,18,19,20],score:3},
+];
+
+function scorePlace(p,q){
+  const ql=q.toLowerCase().trim();
+  if(!ql)return 0;
+  let sc=0;
+  const pnl=p.name.toLowerCase();
+  const rev=(p.review||'').toLowerCase();
+  // Direct text matches
+  if(pnl.includes(ql))sc+=12;
+  if(rev.includes(ql))sc+=7;
+  if((p.cat||'').toLowerCase().includes(ql))sc+=5;
+  const grp=getGroupInfo(p.cat);
+  if(grp.key.toLowerCase().includes(ql))sc+=4;
+  // Keyword term matching
+  for(const rule of DISC_TERMS){
+    const matched=rule.t.some(kw=>ql.includes(kw)||kw.includes(ql)||rev.includes(kw)||pnl.includes(kw));
+    if(!matched)continue;
+    let bonus=rule.score;
+    // Category boost
+    if(rule.cats&&rule.cats.includes(grp.key))sc+=bonus+2;
+    else if(rule.cats)sc+=1; // partial match — the query fits but not the category
+    // Price boost
+    if(rule.price&&rule.price.includes(p.price))sc+=bonus;
+    // Michelin boost
+    if(rule.michelin&&p.michelin>0)sc+=bonus+p.michelin;
+    // Local boost
+    if(rule.local&&p.local)sc+=bonus;
+    // Meal boost
+    if(rule.meals&&p.meals&&rule.meals.some(m=>p.meals.includes(m)))sc+=bonus;
+    // Arr boost
+    if(rule.arrs&&rule.arrs.includes(p.arr))sc+=bonus;
+    // Experience boost
+    if(rule.exp&&rule.exp.includes(getExperience(p)))sc+=bonus;
+  }
+  return sc;
+}
+
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+updateFavUI();
+readURLParams();
+applyFilters();
+renderListPanel();
+if('serviceWorker' in navigator && location.protocol!=='file:'){
+  navigator.serviceWorker.register('./sw.js').catch(()=>{});
+}
+</script>
+</body>
+</html>
