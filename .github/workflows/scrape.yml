@@ -5,6 +5,10 @@ on:
     - cron: '0 9 1,15 * *'
   workflow_dispatch:
 
+permissions:
+  issues: write
+  contents: read
+
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -32,6 +36,11 @@ jobs:
               const body = fs.readFileSync('new_places.txt', 'utf8');
               await github.rest.issues.create({
                 owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: 'New Les Frenchies places to review',
+                body: body
+              });
+            }
                 repo: context.repo.repo,
                 title: 'New Les Frenchies places to review',
                 body: body
