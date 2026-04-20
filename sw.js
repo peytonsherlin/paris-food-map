@@ -1,6 +1,5 @@
-const CACHE='paris-food-v1';
+const CACHE='paris-food-v2';
 const PRECACHE=[
-  './paris-food-map.html',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
   'https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css',
@@ -24,6 +23,20 @@ self.addEventListener('activate',e=>{
 
 self.addEventListener('fetch',e=>{
   if(e.request.method!=='GET')return;
+  // Network-first for HTML — always fetch fresh, fall back to cache offline
+  if(e.request.destination==='document'||e.request.url.includes('.html')){
+    e.respondWith(
+      fetch(e.request).then(res=>{
+        if(res&&res.status===200){
+          const clone=res.clone();
+          caches.open(CACHE).then(c=>c.put(e.request,clone));
+        }
+        return res;
+      }).catch(()=>caches.match(e.request))
+    );
+    return;
+  }
+  // Cache-first for CDN assets
   e.respondWith(
     caches.match(e.request).then(cached=>{
       if(cached)return cached;
@@ -33,6 +46,6 @@ self.addEventListener('fetch',e=>{
         caches.open(CACHE).then(c=>c.put(e.request,clone));
         return res;
       });
-    }).catch(()=>caches.match('./paris-food-map.html'))
+    }).catch(()=>caches.match(e.request))
   );
 });
