@@ -1379,7 +1379,7 @@ function scorePlace(p,q){
   if(grp.key.toLowerCase().includes(ql))sc+=4;
   // Keyword term matching
   for(const rule of DISC_TERMS){
-    const matched=rule.t.some(kw=>ql.includes(kw)||kw.includes(ql)||rev.includes(kw)||pnl.includes(kw));
+    const matched=rule.t.some(kw=>ql.includes(kw)||kw.includes(ql));
     if(!matched)continue;
     let bonus=rule.score;
     // Category boost
