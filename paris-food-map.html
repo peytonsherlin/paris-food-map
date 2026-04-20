@@ -3,43 +3,49 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Paris Food Guide</title>
-<meta name="description" content="178 curated restaurants, cafés and bistros in Paris — map, filters and local picks.">
-<meta name="theme-color" content="#8b5e3c">
+<title>Les Frenchies · Paris Food Map</title>
+<meta name="description" content="178 curated restaurants, cafés and bistros in Paris — handpicked by Les Frenchies Travel.">
+<meta name="theme-color" content="#c8922a">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Paris Food">
-<link rel="manifest" href='data:application/manifest+json,{"name":"Paris Food Guide","short_name":"Paris Food","start_url":".","display":"standalone","background_color":"%23faf8f5","theme_color":"%238b5e3c"}'>
+<meta property="og:title" content="Les Frenchies · Paris Food Map">
+<meta property="og:description" content="178 curated restaurants, cafés and bistros in Paris — handpicked by Les Frenchies Travel.">
+<meta property="og:type" content="website">
+<link rel="manifest" href='data:application/manifest+json,{"name":"Paris Food Guide","short_name":"Paris Food","start_url":".","display":"standalone","background_color":"%23faf8f5","theme_color":"%23c8922a"}'>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=Inter:wght@400;500;600&family=Bebas+Neue&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 :root{
   --bg:#faf8f5;--white:#fff;--border:#e8e3dc;--text:#1c1c1c;--muted:#9a8f82;
-  --accent:#8b5e3c;--accent-light:#f3ece4;--sidebar:232px;--list:320px;
+  --accent:#c8922a;--accent-light:#fdf3e3;--sidebar:232px;--list:320px;
+  --hdr-bg:#12121f;--hdr-text:#ffffff;--hdr-gold:#c8922a;
 }
 body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);height:100dvh;display:flex;flex-direction:column;overflow:hidden;}
 
 /* ── HEADER ── */
-#header{background:var(--white);height:54px;padding:0 18px;display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--border);flex-shrink:0;z-index:500;}
-#header h1{font-family:'Playfair Display',serif;font-size:1.2rem;font-weight:700;white-space:nowrap;color:var(--text);}
-#header h1 em{font-style:italic;color:var(--accent);}
-.hdiv{width:1px;height:18px;background:var(--border);flex-shrink:0;}
+#header{background:var(--hdr-bg);height:58px;padding:0 18px;display:flex;align-items:center;gap:14px;border-bottom:2px solid var(--hdr-gold);flex-shrink:0;z-index:500;}
+#header h1{font-family:'Bebas Neue',sans-serif;font-size:1.35rem;font-weight:700;white-space:nowrap;color:var(--hdr-text);letter-spacing:.04em;text-transform:uppercase;}
+#header h1 em{font-style:normal;color:var(--hdr-gold);}
+#paris-badge{background:#cc2200;color:#fff;font-family:'Bebas Neue',sans-serif;font-size:0.85rem;letter-spacing:.1em;padding:2px 7px;border-radius:3px;display:inline-block;vertical-align:middle;margin-right:2px;}
+#header h1 .tagline{font-family:'Inter',sans-serif;font-size:0.62rem;font-weight:400;color:rgba(255,255,255,.5);letter-spacing:.12em;text-transform:uppercase;display:block;margin-top:-3px;}
+.hdiv{width:1px;height:18px;background:rgba(255,255,255,.2);flex-shrink:0;}
 #search-wrap{flex:1;max-width:380px;position:relative;}
-#search{width:100%;padding:6px 10px 6px 30px;border-radius:5px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.8rem;font-family:'Inter',sans-serif;outline:none;transition:border-color .15s,background .15s;}
-#search::placeholder{color:var(--muted);}
-#search:focus{border-color:var(--accent);background:var(--white);}
-.si{position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:0.78rem;opacity:.4;pointer-events:none;}
+#search{width:100%;padding:6px 10px 6px 30px;border-radius:5px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:#fff;font-size:0.8rem;font-family:'Inter',sans-serif;outline:none;transition:border-color .15s,background .15s;}
+#search::placeholder{color:rgba(255,255,255,.45);}
+#search:focus{border-color:var(--hdr-gold);background:rgba(255,255,255,.15);}
+.si{position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:0.78rem;opacity:.5;pointer-events:none;color:#fff;}
 #hdr-right{display:flex;align-items:center;gap:8px;margin-left:auto;}
-#count-badge{font-size:0.72rem;color:var(--muted);white-space:nowrap;}
-#count-badge strong{color:var(--accent);font-weight:600;}
+#count-badge{font-size:0.72rem;color:rgba(255,255,255,.6);white-space:nowrap;}
+#count-badge strong{color:var(--hdr-gold);font-weight:600;}
 
-.hdr-btn{display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:5px;border:1px solid var(--border);background:var(--white);font-size:0.72rem;font-family:'Inter',sans-serif;color:var(--muted);cursor:pointer;white-space:nowrap;transition:all .15s;}
-.hdr-btn:hover{border-color:var(--accent);color:var(--accent);}
-.hdr-btn.active{background:var(--accent-light);border-color:var(--accent);color:var(--accent);}
+.hdr-btn{display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:5px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.1);font-size:0.72rem;font-family:'Inter',sans-serif;color:rgba(255,255,255,.8);cursor:pointer;white-space:nowrap;transition:all .15s;}
+.hdr-btn:hover{border-color:var(--hdr-gold);color:var(--hdr-gold);}
+.hdr-btn.active{background:rgba(200,146,42,.2);border-color:var(--hdr-gold);color:var(--hdr-gold);}
 #fav-btn .fav-count{background:var(--accent);color:#fff;border-radius:9px;padding:1px 6px;font-size:0.65rem;font-weight:600;display:none;}
 #fav-btn .fav-count.show{display:inline;}
 #mobile-filter-btn{display:none;}
@@ -94,6 +100,12 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);heigh
 
 #reset-btn{width:100%;padding:6px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.73rem;font-family:'Inter',sans-serif;cursor:pointer;transition:all .12s;margin-top:4px;}
 #reset-btn:hover{border-color:var(--text);color:var(--text);}
+#sidebar-footer{font-size:0.63rem;color:var(--muted);text-align:center;padding:12px 0 2px;line-height:1.6;}
+#sidebar-footer a{color:var(--muted);text-decoration:none;}
+#sidebar-footer a:hover{color:var(--accent);}
+#empty-state{padding:36px 20px;text-align:center;color:var(--muted);font-size:0.82rem;line-height:1.8;}
+#empty-state button{margin-top:10px;padding:5px 16px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--text);font-size:0.78rem;font-family:'Inter',sans-serif;cursor:pointer;}
+#empty-state button:hover{border-color:var(--accent);color:var(--accent);}
 
 /* ── MAP ── */
 #map{flex:1;position:relative;}
@@ -141,7 +153,7 @@ body.force-mobile #sidebar-mob-header{display:flex;}
 .photo-strip img:last-child{border-radius:0 8px 0 0;}
 .pn{font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;color:var(--text);line-height:1.3;margin-bottom:5px;}
 .pbadges{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;align-items:center;}
-.badge-local{display:inline-flex;align-items:center;gap:3px;font-size:0.64rem;font-weight:600;letter-spacing:.2px;padding:2px 7px;border-radius:3px;background:#e8f4e8;color:#2d6a2d;border:1px solid #b8dab8;}
+
 .badge-michelin{display:inline-flex;align-items:center;gap:2px;font-size:0.64rem;font-weight:700;padding:2px 7px;border-radius:3px;background:#fff8e6;color:#a07800;border:1px solid #e0cc80;}
 .badge-cat{font-size:0.64rem;font-weight:600;padding:2px 7px;border-radius:3px;color:#fff;}
 .pmeta{display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap;}
@@ -191,6 +203,7 @@ body.force-mobile #sidebar-mob-header{display:flex;}
   #sidebar-toggle{display:none!important;}
   #list-toggle{display:none!important;}
   #count-badge{display:none;}
+  #paris-badge{display:none;}
   #fav-btn{display:none!important;}
   #mobile-filter-btn{display:none!important;}
   #view-toggle{display:none!important;}
@@ -260,19 +273,34 @@ body.force-mobile #fav-panel{position:fixed!important;width:100%!important;borde
 .lc-links{display:flex;gap:10px;margin-top:6px;}
 .lc-link{font-size:.7rem;color:var(--accent);text-decoration:none;font-weight:600;}
 .lc-link:hover{text-decoration:underline;}
+.lc-save{background:none;border:none;cursor:pointer;padding:0;font-family:'Inter',sans-serif;}
+.lc-saved{color:var(--accent);font-weight:700;}
 @media(max-width:700px){#list-toggle{display:none!important;}#list-panel{display:none!important;}}
-.misc-check{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;}
-.misc-check input{display:none;}
-.misc-box{width:15px;height:15px;border:1.5px solid var(--border);border-radius:3px;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:background .12s,border-color .12s;}
-.misc-check input:checked+.misc-box{background:var(--accent);border-color:var(--accent);}
-.misc-check input:checked+.misc-box::after{content:'✓';color:#fff;font-size:0.6rem;font-weight:700;line-height:1;}
-.misc-text{font-size:0.78rem;color:var(--text);}
+
 </style>
+<script>
+(function(){
+  var c=document.createElement('canvas');c.width=c.height=192;
+  var x=c.getContext('2d');
+  x.fillStyle='#12121f';
+  x.beginPath();if(x.roundRect)x.roundRect(0,0,192,192,36);else x.rect(0,0,192,192);x.fill();
+  x.strokeStyle='#c8922a';x.lineWidth=7;x.beginPath();
+  if(x.roundRect)x.roundRect(5,5,182,182,30);else x.rect(5,5,182,182);x.stroke();
+  x.fillStyle='#c8922a';x.font='bold 74px Georgia,serif';x.textAlign='center';x.textBaseline='middle';
+  x.fillText('LF',96,84);
+  x.fillStyle='#fff';x.font='bold 21px Arial,sans-serif';
+  x.fillText('PARIS',96,140);
+  var url=c.toDataURL();
+  var li=document.createElement('link');li.rel='apple-touch-icon';li.href=url;document.head.appendChild(li);
+  var mf=document.querySelector('link[rel=manifest]');
+  if(mf){try{var src=mf.href.slice(mf.href.indexOf(',')+1);var obj=JSON.parse(decodeURIComponent(src));obj.icons=[{src:url,sizes:'192x192',type:'image/png'}];mf.href='data:application/manifest+json,'+encodeURIComponent(JSON.stringify(obj));}catch(e){}}
+})();
+</script>
 </head>
 <body>
 
 <div id="header">
-  <h1>Paris <em>Food Guide</em></h1>
+  <h1><span id="paris-badge">PARIS</span> 🍴🥐 Les Frenchies<span class="tagline">Allez, on y va!</span></h1>
   <div class="hdiv"></div>
   <div id="search-wrap">
     <span class="si">⌕</span>
@@ -280,7 +308,7 @@ body.force-mobile #fav-panel{position:fixed!important;width:100%!important;borde
   </div>
   <div id="hdr-right">
     <div id="count-badge"><strong id="count">0</strong> places</div>
-    <button id="view-toggle" class="hdr-btn">📱 Mobile view</button>
+    <button id="share-btn" class="hdr-btn">⎘ Share</button>
     <button id="fav-btn" class="hdr-btn">♥ Saved <span class="fav-count" id="fav-count-badge">0</span></button>
     <button id="mobile-filter-btn" class="hdr-btn">⊟ Filters</button>
   </div>
@@ -329,15 +357,8 @@ body.force-mobile #fav-panel{position:fixed!important;width:100%!important;borde
         <button class="price-btn on" data-price="€€€€">€€€€</button>
       </div>
     </div>
-    <div class="fs" style="margin-bottom:12px;">
-      <div class="ft">More</div>
-      <label class="misc-check" id="locals-label">
-        <input type="checkbox" id="locals-filter">
-        <span class="misc-box"></span>
-        <span class="misc-text">Locals' Favorite</span>
-      </label>
-    </div>
     <button id="reset-btn">↺ Reset all filters</button>
+    <div id="sidebar-footer">Updated Apr 2026 · <a href="https://www.youtube.com/@LesFrenchiesTravel" target="_blank" rel="noopener">Les Frenchies Travel</a></div>
   </div>
 
   <div id="map">
@@ -938,20 +959,15 @@ function makeIcon(p){
 
 function makePopup(p){
   const g=getGroupInfo(p.cat);
-  const localBadge=p.local?`<span class="badge-local">🏠 Local's Favourite</span>`:'';
   const michelinBadge=p.michelin?`<span class="badge-michelin">${'★'.repeat(p.michelin)} Michelin</span>`:'';
   const saved=isFav(p.name);
   const mapsUrl=`https://www.google.com/maps/search/${encodeURIComponent(p.name+' Paris')}`;
   const web=WEBSITES[p.name];
-  const photos=getPhotos(p);
-  const strip=`<div class="photo-strip">${photos.map(u=>`<img src="${u}" loading="lazy" onerror="this.onerror=null;this.removeAttribute('src')">`).join('')}</div>`;
   const webBtn=web?`<a class="pact-btn" href="${web}" target="_blank">🌐 Website</a>`:'';
-  const ytBtn=p.source==='Les Frenchies Travel'?`<a class="pact-btn" href="https://www.youtube.com/@LesFrenchiesTravel/playlists" target="_blank" rel="noopener">▶ Les Frenchies Channel</a>`:'';
   const sn=p.name.replace(/'/g,"\\'");
   return`<div class="pw">
-    ${strip}
     <div class="pn">${p.name}</div>
-    ${(localBadge||michelinBadge)?`<div class="pbadges">${localBadge}${michelinBadge}</div>`:''}
+    ${michelinBadge?`<div class="pbadges">${michelinBadge}</div>`:''}
     <div class="pmeta">
       <span class="badge-cat" style="background:${g.color}">${g.key}</span>
       <span class="pprice">${p.price}</span>
@@ -962,7 +978,6 @@ function makePopup(p){
     <div class="pactions">
       <a class="pact-btn" href="${mapsUrl}" target="_blank">📍 Directions</a>
       ${webBtn}
-      ${ytBtn}
       <button class="pact-btn ${saved?'saved':''}" onclick="toggleFav('${sn}');this.className='pact-btn '+(isFav('${sn}')?'saved':'');this.textContent=isFav('${sn}')?'♥ Saved':'♡ Save';">${saved?'♥ Saved':'♡ Save'}</button>
     </div>
     <div class="psource">${p.source}</div>
@@ -995,7 +1010,6 @@ let activeArrs=new Set([...new Set(places.map(p=>p.arr))]);
 let activeMeals=new Set(["breakfast","lunch","dinner","snack"]);
 let activePrices=new Set(["€","€€","€€€","€€€€"]);
 let activeExp=-1;
-let localsOnly=false;
 let searchQ="";
 
 // ─── URL STATE (deep linking) ─────────────────────────────────────────────────
@@ -1007,7 +1021,6 @@ function writeURLParams(){
   if(activePrices.size<4)p.set('price',[...activePrices].join(','));
   if(activeMeals.size<4)p.set('meal',[...activeMeals].join(','));
   if(activeExp>=0)p.set('exp',activeExp);
-  if(localsOnly)p.set('locals','1');
   const str=p.toString();
   history.replaceState(null,'',location.pathname+(str?'?'+str:''));
 }
@@ -1033,7 +1046,6 @@ function readURLParams(){
   }
   const exp=p.get('exp');
   if(exp!==null){activeExp=parseInt(exp);expSlider.value=activeExp===-1?3:activeExp;syncExpLabel();}
-  if(p.get('locals')==='1'){localsOnly=true;document.getElementById('locals-filter').checked=true;}
   const place=p.get('place');
   if(place){
     const mk=markers.find(m=>m._p.name===place);
@@ -1057,7 +1069,6 @@ function renderListPanel(){
     if(p.meals&&![...activeMeals].some(m=>p.meals.includes(m)))return false;
     if(searchQ&&scorePlace(p,searchQ)===0)return false;
     if(activeExp>=0&&getExperience(p)!==activeExp)return false;
-    if(localsOnly&&!(p.local&&(RATINGS[p.name]||0)>=4.5))return false;
     return true;
   });
   if(searchQ){
@@ -1066,10 +1077,13 @@ function renderListPanel(){
     visible.sort((a,b)=>(RATINGS[b.name]||0)-(RATINGS[a.name]||0));
   }
   titleEl.textContent=`${visible.length} place${visible.length!==1?'s':''}`;
+  if(!visible.length){cards.innerHTML='<div id="empty-state">No places match your filters.<br><button onclick="document.getElementById(\'reset-btn\').click()">↺ Reset filters</button></div>';return;}
   cards.innerHTML=visible.map(p=>{
     const rating=RATINGS[p.name];
     const site=WEBSITES[p.name];
     const grp=getGroupInfo(p.cat);
+    const sn=p.name.replace(/'/g,"\\'");
+    const saved=isFav(p.name);
     return`<div class="lc-card">
       <div class="lc-body">
         <div class="lc-top">
@@ -1082,6 +1096,7 @@ function renderListPanel(){
           ${site?`<a class="lc-link" href="${site}" target="_blank" rel="noopener">🌐 Website</a>`:''}
           <a class="lc-link lc-maps" href="https://www.google.com/maps/search/${encodeURIComponent(p.name+' Paris')}" target="_blank" rel="noopener">📍 Maps</a>
           ${p.source==='Les Frenchies Travel'?`<a class="lc-link" href="https://www.youtube.com/@LesFrenchiesTravel/playlists" target="_blank" rel="noopener">▶ Les Frenchies Channel</a>`:''}
+          <button class="lc-link lc-save ${saved?'lc-saved':''}" onclick="toggleFav('${sn}');this.classList.toggle('lc-saved',isFav('${sn}'));this.textContent=isFav('${sn}')?'♥ Saved':'♡ Save';">${saved?'♥ Saved':'♡ Save'}</button>
         </div>
       </div>
     </div>`;
@@ -1119,7 +1134,6 @@ function applyFilters(){
     if(p.meals&&![...activeMeals].some(m=>p.meals.includes(m)))return;
     if(searchQ&&scorePlace(p,searchQ)===0)return;
     if(activeExp>=0&&getExperience(p)!==activeExp)return;
-    if(localsOnly&&!(p.local&&(RATINGS[p.name]||0)>=4.5))return;
     cluster.addLayer(m);n++;
   });
   document.getElementById('count').textContent=n;
@@ -1189,12 +1203,6 @@ document.querySelectorAll('.price-btn').forEach(btn=>{
   });
 });
 
-// ─── LOCALS FILTER ────────────────────────────────────────────────────────────
-document.getElementById('locals-filter').addEventListener('change',e=>{
-  localsOnly=e.target.checked;
-  applyFilters();
-});
-
 // ─── SEARCH ───────────────────────────────────────────────────────────────────
 document.getElementById('search').addEventListener('keydown',e=>{
   if(e.key==='Enter'){searchQ=e.target.value.trim();applyFilters();}
@@ -1210,12 +1218,25 @@ document.getElementById('reset-btn').addEventListener('click',()=>{
   document.querySelectorAll('.meal-btn').forEach(el=>el.classList.add('on'));
   activePrices=new Set(["€","€€","€€€","€€€€"]);
   activeExp=-1;expSlider.value=3;syncExpLabel();
-  localsOnly=false;document.getElementById('locals-filter').checked=false;
   searchQ="";
   document.getElementById('search').value="";
   document.querySelectorAll('.arr-btn').forEach(el=>el.classList.add('on'));
   document.querySelectorAll('.price-btn').forEach(el=>el.classList.add('on'));
   applyFilters();
+});
+
+// ─── SHARE ────────────────────────────────────────────────────────────────────
+document.getElementById('share-btn').addEventListener('click',()=>{
+  const url=location.href;
+  const btn=document.getElementById('share-btn');
+  if(navigator.share){
+    navigator.share({title:'Les Frenchies · Paris Food Map',url}).catch(()=>{});
+  } else {
+    navigator.clipboard.writeText(url).then(()=>{
+      const orig=btn.textContent;btn.textContent='✓ Copied!';
+      setTimeout(()=>{btn.textContent=orig;},2000);
+    }).catch(()=>{});
+  }
 });
 
 // ─── SIDEBAR TOGGLE ───────────────────────────────────────────────────────────
@@ -1300,24 +1321,6 @@ document.getElementById('mbar-fav-btn').addEventListener('click',()=>{
   if(opening){document.getElementById('fav-panel').classList.add('open');showOverlay();renderFavList();}
 });
 
-// ─── VIEW TOGGLE ──────────────────────────────────────────────────────────────
-let forceMobile=false;
-document.getElementById('view-toggle').addEventListener('click',()=>{
-  forceMobile=!forceMobile;
-  document.body.classList.toggle('force-mobile',forceMobile);
-  const vt=document.getElementById('view-toggle');
-  vt.classList.toggle('active',forceMobile);
-  vt.textContent=forceMobile?'💻 Desktop view':'📱 Mobile view';
-  const sb=document.getElementById('sidebar');
-  const layout=document.getElementById('layout');
-  closeAllMobilePanels();
-  if(!forceMobile){
-    sb.classList.remove('collapsed');
-    layout.classList.remove('sidebar-collapsed');
-    document.getElementById('sidebar-toggle').textContent='‹';
-  }
-  map.invalidateSize();
-});
 
 // ─── DISCOVER ─────────────────────────────────────────────────────────────────
 const DISC_TERMS=[
