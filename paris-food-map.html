@@ -304,7 +304,7 @@ body.force-mobile #fav-panel{position:fixed!important;width:100%!important;borde
   <div class="hdiv"></div>
   <div id="search-wrap">
     <span class="si">⌕</span>
-    <input type="text" id="search" placeholder="Search: name, dish, vibe… (Enter)" autocomplete="off">
+    <input type="text" id="search" placeholder="Search: name, dish, vibe…" autocomplete="off">
   </div>
   <div id="hdr-right">
     <div id="count-badge"><strong id="count">0</strong> places</div>
@@ -1204,11 +1204,8 @@ document.querySelectorAll('.price-btn').forEach(btn=>{
 });
 
 // ─── SEARCH ───────────────────────────────────────────────────────────────────
-document.getElementById('search').addEventListener('keydown',e=>{
-  if(e.key==='Enter'){searchQ=e.target.value.trim();applyFilters();}
-});
 document.getElementById('search').addEventListener('input',e=>{
-  if(!e.target.value){searchQ='';applyFilters();}
+  searchQ=e.target.value.trim();applyFilters();
 });
 
 // ─── RESET ────────────────────────────────────────────────────────────────────
