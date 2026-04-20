@@ -962,8 +962,8 @@ function makePopup(p){
   const michelinBadge=p.michelin?`<span class="badge-michelin">${'★'.repeat(p.michelin)} Michelin</span>`:'';
   const saved=isFav(p.name);
   const mapsUrl=`https://www.google.com/maps/search/${encodeURIComponent(p.name+' Paris')}`;
-  const web=WEBSITES[p.name];
-  const webBtn=web?`<a class="pact-btn" href="${web}" target="_blank">🌐 Website</a>`:'';
+  const searchUrl=`https://www.google.com/search?q=${encodeURIComponent(p.name+' Paris')}`;
+  const webBtn=`<a class="pact-btn" href="${searchUrl}" target="_blank" rel="noopener">🔍 Google</a>`;
   const sn=p.name.replace(/'/g,"\\'");
   return`<div class="pw">
     <div class="pn">${p.name}</div>
@@ -1093,7 +1093,7 @@ function renderListPanel(){
         <div class="lc-meta">${grp.key} · ${p.price} · ${p.arr}${ord(p.arr)} arr.</div>
         <div class="lc-review">${p.review}</div>
         <div class="lc-links">
-          ${site?`<a class="lc-link" href="${site}" target="_blank" rel="noopener">🌐 Website</a>`:''}
+          <a class="lc-link" href="https://www.google.com/search?q=${encodeURIComponent(p.name+' Paris')}" target="_blank" rel="noopener">🔍 Google</a>
           <a class="lc-link lc-maps" href="https://www.google.com/maps/search/${encodeURIComponent(p.name+' Paris')}" target="_blank" rel="noopener">📍 Maps</a>
           ${p.source==='Les Frenchies Travel'?`<a class="lc-link" href="https://www.youtube.com/@LesFrenchiesTravel/playlists" target="_blank" rel="noopener">▶ Les Frenchies Channel</a>`:''}
           <button class="lc-link lc-save ${saved?'lc-saved':''}" onclick="toggleFav('${sn}');this.classList.toggle('lc-saved',isFav('${sn}'));this.textContent=isFav('${sn}')?'♥ Saved':'♡ Save';">${saved?'♥ Saved':'♡ Save'}</button>
