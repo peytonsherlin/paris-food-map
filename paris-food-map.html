@@ -1067,7 +1067,7 @@ function renderListPanel(){
     if(!activeArrs.has(p.arr))return false;
     if(!activePrices.has(p.price))return false;
     if(p.meals&&![...activeMeals].some(m=>p.meals.includes(m)))return false;
-    if(searchQ&&scorePlace(p,searchQ)===0)return false;
+    if(searchQ&&scorePlace(p,searchQ)<3)return false;
     if(activeExp>=0&&getExperience(p)!==activeExp)return false;
     return true;
   });
@@ -1132,7 +1132,7 @@ function applyFilters(){
     if(!activeArrs.has(p.arr))return;
     if(!activePrices.has(p.price))return;
     if(p.meals&&![...activeMeals].some(m=>p.meals.includes(m)))return;
-    if(searchQ&&scorePlace(p,searchQ)===0)return;
+    if(searchQ&&scorePlace(p,searchQ)<3)return;
     if(activeExp>=0&&getExperience(p)!==activeExp)return;
     cluster.addLayer(m);n++;
   });
@@ -1384,7 +1384,6 @@ function scorePlace(p,q){
     let bonus=rule.score;
     // Category boost
     if(rule.cats&&rule.cats.includes(grp.key))sc+=bonus+2;
-    else if(rule.cats)sc+=1; // partial match — the query fits but not the category
     // Price boost
     if(rule.price&&rule.price.includes(p.price))sc+=bonus;
     // Michelin boost
