@@ -2,6 +2,7 @@ import feedparser
 import requests
 import re
 import sys
+from urllib.parse import quote
 
 FEED_URL = "https://www.youtube.com/feeds/videos.xml?channel_id=UC5m1fPLNTZCgLjIzO5iy-Ng"
 
@@ -35,6 +36,8 @@ EXISTING_PLACES = [
     "Ellsworth","Champeaux","Pirouette","Spring","Verjus","Racines des Prés",
 ]
 
+CATEGORIES = "Bakery & Pâtisserie · Bistro & Brasserie · Café & Coffee · Fine Dining · Seafood · Wine & Bar · Casual & Street Food · Italian & Pizza · Market & Specialty · Steakhouse"
+
 def get_recent_videos():
     feed = feedparser.parse(FEED_URL)
     return feed.entries[:10]
@@ -54,12 +57,15 @@ def extract_place_candidates(text):
 def find_new_places(videos):
     existing_lower = {p.lower() for p in EXISTING_PLACES}
     new_places = []
+    seen = set()
     for video in videos:
         title = video.get('title', '')
         description = video.get('summary', '')
         candidates = extract_place_candidates(description)
         for candidate in candidates:
-            if candidate.lower() not in existing_lower:
+            key = candidate.lower()
+            if key not in existing_lower and key not in seen:
+                seen.add(key)
                 new_places.append({
                     'place': candidate,
                     'video_title': title,
@@ -67,16 +73,77 @@ def find_new_places(videos):
                 })
     return new_places
 
+def geocode(place_name):
+    try:
+        params = {"q": f"{place_name}, Paris, France", "format": "json", "limit": 1}
+        headers = {"User-Agent": "LesFrenchiesFoodMap/1.0"}
+        r = requests.get("https://nominatim.openstreetmap.org/search",
+                         params=params, headers=headers, timeout=8)
+        data = r.json()
+        if data:
+            return round(float(data[0]["lat"]), 4), round(float(data[0]["lon"]), 4)
+    except Exception:
+        pass
+    return None, None
+
+def build_issue_body(new_places):
+    lines = [
+        "## 🗺️ Potential new places from Les Frenchies",
+        "",
+        "The scraper found these in recent videos. For each confirmed place:",
+        "1. Click the map link to verify the geocoded location is accurate",
+        "2. Fill in the CAPS fields in the JS stub",
+        "3. Paste the object into the `places` array in `paris-food-map.html`",
+        "4. Add the name to `EXISTING_PLACES` in `scripts/scrape.py` so it won't flag again",
+        "",
+        "---",
+        "",
+    ]
+
+    for p in new_places:
+        place = p['place']
+        lat, lng = geocode(place)
+
+        lines.append(f"### {place}")
+        lines.append(f"📹 [{p['video_title']}]({p['video_url']})")
+        lines.append("")
+
+        if lat:
+            map_url = f"https://www.openstreetmap.org/?mlat={lat}&mlon={lng}&zoom=17"
+            lines.append(f"📍 Geocoded: `{lat}, {lng}` · [verify on map]({map_url})")
+        else:
+            search_url = f"https://nominatim.openstreetmap.org/search?q={quote(place + ' Paris')}&format=json"
+            lines.append(f"📍 Could not geocode · [search manually]({search_url})")
+
+        lines.append("")
+
+        lat_str = str(lat) if lat else "XX.XXXX"
+        lng_str = str(lng) if lng else "X.XXXX"
+        stub = (
+            f'  {{name:"{place}", cat:"CATEGORY", arr:X, price:"€€",\n'
+            f'   lat:{lat_str}, lng:{lng_str}, michelin:0,\n'
+            f'   meals:["lunch","dinner"], tags:[], review:"REVIEW",\n'
+            f'   source:"Les Frenchies Travel"}},'
+        )
+
+        lines.append("```js")
+        lines.append(stub)
+        lines.append("```")
+        lines.append("")
+        lines.append(f"**Categories:** {CATEGORIES}")
+        lines.append("")
+        lines.append("---")
+        lines.append("")
+
+    return "\n".join(lines)
+
 videos = get_recent_videos()
 new_places = find_new_places(videos)
 
 if new_places:
+    body = build_issue_body(new_places)
     with open('new_places.txt', 'w') as f:
-        f.write("## Potential new places found in recent Les Frenchies videos\n\n")
-        f.write("Review these and add any confirmed ones to the map.\n\n")
-        for p in new_places:
-            f.write(f"**{p['place']}**\n")
-            f.write(f"Found in: [{p['video_title']}]({p['video_url']})\n\n")
+        f.write(body)
     print(f"Found {len(new_places)} potential new places.")
     sys.exit(1)
 else:
